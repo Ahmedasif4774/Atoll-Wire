@@ -2,6 +2,8 @@
 // just the English-language widget copy (social posts, video captions).
 // See homeConfig.dv.ts for the general explanation of this file's shape.
 
+import type { LatestMixedEntry } from "./types";
+
 export const homeConfigEn = {
   heroSlug: "harbor",
   editorPairSlugs: ["football-squad", "medical-appeal"],
@@ -16,7 +18,7 @@ export const homeConfigEn = {
     { slug: "coalition-talks" },
     { slug: "ferry-schedule" },
     { slug: "swimming-record" },
-  ],
+  ] as LatestMixedEntry[],
   sportSlugs: ["fifa-ban-bassam", "basketball-final", "volleyball-championship", "football-squad", "cricket-series"],
   worldSlugs: ["earthquake", "cargo-route", "trade-summit", "climate-agreement"],
   socialTrending: {

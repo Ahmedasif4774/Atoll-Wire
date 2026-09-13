@@ -87,3 +87,11 @@ export interface ContentDataset {
   categories: Category[];
   articles: Article[];
 }
+
+// One entry in a homepage "Latest" grid: either a real article (by slug) or
+// the pinned sponsored/native-ad slot. Written as an explicit union (instead
+// of letting TypeScript infer it from the array literal in homeConfig.*.ts)
+// so the "ad" in entry narrowing in app/(dv)/page.tsx and app/(en)/en/page.tsx
+// reliably gives `catLabel`/`badgeLabel` as required strings rather than
+// TypeScript merging the two shapes into one type with every field optional.
+export type LatestMixedEntry = { slug: string } | { ad: true; badgeLabel: string; catLabel: string };

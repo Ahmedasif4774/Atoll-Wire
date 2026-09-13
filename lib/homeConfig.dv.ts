@@ -9,6 +9,8 @@
 // a "Homepage" singleton document with reference fields — see the note in
 // lib/sanity/schemaTypes/README.md.
 
+import type { LatestMixedEntry } from "./types";
+
 export const homeConfigDv = {
   heroSlug: "harbor",
   editorPairSlugs: ["football-squad", "medical-appeal"],
@@ -23,7 +25,7 @@ export const homeConfigDv = {
     { slug: "coalition-talks" },
     { slug: "ferry-schedule" },
     { slug: "swimming-record" },
-  ],
+  ] as LatestMixedEntry[],
   sportSlugs: ["fifa-ban-bassam", "basketball-final", "volleyball-championship", "football-squad", "cricket-series"],
   worldSlugs: ["earthquake", "cargo-route", "trade-summit", "climate-agreement"],
   socialTrending: {
