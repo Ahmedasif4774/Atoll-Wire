@@ -1,0 +1,266 @@
+/* Document-level styles only. Everything that can be scoped to a specific
+   page or component lives there instead (via styled-jsx), verbatim from
+   the original static HTML — see each page.tsx. This file only holds what
+   genuinely has to be global: fonts, CSS variables (the dark-mode toggle
+   flips an attribute on <html>, so the variables must live above every
+   component), and the base reset. */
+
+@font-face {
+  font-family: "MV Waheed";
+  src: url("/fonts/MVWaheed.otf") format("opentype");
+  font-display: swap;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+:root {
+  --sea: #f3f7f6;
+  --sea-dim: #e7efee;
+  --surface: #ffffff;
+  --ink: #0e2a47;
+  --ink-soft: #52696c;
+  --coral: #f2a93b;
+  --teal: #0ea5a0;
+  --line: #d7e2e0;
+}
+html[data-theme="dark"] {
+  --sea: #0b1e21;
+  --sea-dim: #112b2f;
+  --surface: #12292d;
+  --ink: #eaf3f1;
+  --ink-soft: #9fb6b4;
+  --coral: #f5bc5c;
+  --teal: #2cc4be;
+  --line: #1f3e42;
+}
+html[data-theme="dark"] nav.primary-nav {
+  background: #0e2a47;
+}
+html[data-theme="dark"] nav.primary-nav a.active {
+  color: #0e2a47;
+}
+html[data-theme="dark"] footer {
+  background: #0e2a47;
+  color: #f3f7f6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--sea);
+  color: var(--ink);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+img {
+  max-width: 100%;
+  display: block;
+}
+::selection {
+  background: var(--coral);
+  color: #fff;
+}
+:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (min-width: 1440px) {
+  .wrap {
+    max-width: 1320px;
+  }
+}
+@media (min-width: 1680px) {
+  .wrap {
+    max-width: 1480px;
+  }
+}
+
+/* AD SLOTS — shared everywhere, page-agnostic */
+.ad-slot {
+  max-width: 728px;
+  margin: 20px auto;
+  aspect-ratio: 728 / 90;
+  background: var(--sea-dim);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.ad-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+main.wrap > .ad-slot,
+.wrap > .ad-slot {
+  max-width: none;
+  width: 100%;
+}
+.ad-slot.ad-sidebar {
+  max-width: none;
+  aspect-ratio: 300 / 250;
+  margin: 0 0 24px;
+}
+@media (max-width: 600px) {
+  .ad-slot:not(.ad-sidebar) {
+    aspect-ratio: 320 / 50;
+  }
+}
+.native-ad-card {
+  position: relative;
+}
+.native-ad-card .ad-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(14, 42, 71, 0.85);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+/* Category tag colors — same 7 categories everywhere */
+.cat-tag {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 3px;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.cat-news {
+  /* Fixed colors, not the theme variables: this badge should look the
+     same in both themes. --coral and --ink both flip to light colors
+     in dark mode, which would leave near-white text on a light-orange
+     badge (unreadable) if either was left theme-aware here. */
+  background: #f2a93b;
+  color: #0e2a47;
+}
+.cat-sport {
+  background: #2e7d32;
+}
+.cat-business {
+  background: var(--teal);
+}
+.cat-world {
+  /* Fixed navy, not var(--ink): --ink flips to near-white in dark mode,
+     which would make this badge's white text disappear against it. */
+  background: #0e2a47;
+}
+.cat-report {
+  background: #4a6fa5;
+}
+.cat-lifestyle {
+  background: #a64ac9;
+}
+.cat-help {
+  background: #c0392b;
+}
+.cat-fundraising {
+  background: #b45309;
+}
+
+/* Base card — identical across the original index/category/article
+   stylesheets. Page-specific layouts override it via
+   `:global(.container .card) { ... }` in that page's own styled-jsx. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(14, 42, 46, 0.08);
+}
+.card:active {
+  background: var(--sea-dim);
+}
+.card .thumb {
+  aspect-ratio: 16/10;
+  overflow: hidden;
+  background: var(--sea-dim);
+  flex-shrink: 0;
+}
+.card .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+.card:hover .thumb img {
+  transform: scale(1.05);
+}
+.card .body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.card h3 {
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card p {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.card .meta-line {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.meta-line {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  direction: ltr;
+}
+.meta-line.on-dark {
+  color: rgba(255, 255, 255, 0.75);
+}
+.meta-line .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}

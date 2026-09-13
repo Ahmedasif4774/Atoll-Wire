@@ -1,0 +1,90 @@
+"use client";
+
+import Link from "next/link";
+import type { CategorySlug } from "@/lib/types";
+import { getCategories } from "@/lib/data";
+
+export default function Nav({ active }: { active?: CategorySlug }) {
+  const categories = getCategories();
+  return (
+    <nav className="primary-nav">
+      <div className="wrap">
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            href={`/en/${c.slug}`}
+            className={c.slug === active ? "active" : undefined}
+          >
+            {c.labelEn}
+          </Link>
+        ))}
+      </div>
+      <style jsx>{`
+        nav.primary-nav {
+          background: var(--ink);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          padding: 10px 24px;
+          display: flex;
+          justify-content: flex-start;
+          max-width: 1152px;
+          margin: 0 auto;
+        }
+        nav.primary-nav::after {
+          content: "";
+          position: absolute;
+          top: 10px;
+          bottom: 10px;
+          right: 24px;
+          width: 28px;
+          background: linear-gradient(to left, var(--ink), transparent);
+          pointer-events: none;
+          z-index: 1;
+        }
+        @media (min-width: 1440px) {
+          nav.primary-nav {
+            max-width: 1272px;
+          }
+        }
+        @media (min-width: 1680px) {
+          nav.primary-nav {
+            max-width: 1432px;
+          }
+        }
+        nav.primary-nav .wrap {
+          display: flex;
+          overflow-x: auto;
+          gap: 2px;
+          scrollbar-width: none;
+          background: rgba(255, 255, 255, 0.06);
+          border-radius: 999px;
+          padding: 4px;
+          width: fit-content;
+          max-width: 100%;
+          margin: 0 auto 0 0;
+        }
+        nav.primary-nav .wrap::-webkit-scrollbar {
+          display: none;
+        }
+        nav.primary-nav :global(a) {
+          color: #f3f7f6;
+          font-weight: 700;
+          font-size: 16px;
+          padding: 9px 18px;
+          white-space: nowrap;
+          border-radius: 999px;
+          transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        nav.primary-nav :global(a:hover) {
+          background: #fff;
+          color: var(--ink);
+        }
+        nav.primary-nav :global(a.active) {
+          background: #fff;
+          color: var(--ink);
+        }
+      `}</style>
+    </nav>
+  );
+}

@@ -1,0 +1,32 @@
+{
+  "name": "atollwire",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "parse-content": "python3 scripts/parse-content.py ../atollwire data/content.json",
+    "migrate-to-sanity": "node scripts/migrate-to-sanity.mjs",
+    "studio": "sanity dev",
+    "studio:deploy": "sanity deploy"
+  },
+  "dependencies": {
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "styled-jsx": "5.1.6",
+    "@sanity/client": "^6.21.3",
+    "@sanity/image-url": "^1.0.2",
+    "groq": "^3.51.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.15",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "sanity": "^3.57.0",
+    "@sanity/vision": "^3.57.0"
+  }
+}
