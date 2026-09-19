@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { sanityClient } from "@/lib/sanity/client";
 import { liveSettingsQuery } from "@/lib/sanity/queries";
 
+// Without this, Next.js sees a GET handler that makes no explicit use of
+// cookies/headers/searchParams and treats it as eligible for STATIC
+// generation — meaning it would call this route exactly once at BUILD
+// time (in a sandboxed environment that may not have real network access
+// or the right env vars) and then serve that single frozen response to
+// every visitor forever, regardless of the per-fetch `revalidate` values
+// below. That's exactly what was happening: the build's one-time call
+// failed/returned nothing, and the resulting `{youtube:null,facebook:null}`
+// got baked in as a static response no live stream could ever change.
+// Forcing this route dynamic makes Next.js actually execute GET() again
+// on every request, so the per-fetch revalidate windows below do their
+// intended job instead of being moot.
+export const dynamic = "force-dynamic";
+
 // YouTube channel handle to watch. Change this (and redeploy) if the
 // channel ever changes — it's a stable identifier, unlike a video ID.
 const YOUTUBE_HANDLE = "NiyaaAcademy";
