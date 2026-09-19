@@ -5,6 +5,7 @@ import Nav from "@/components/dv/Nav";
 import Footer from "@/components/dv/Footer";
 import PrayerWidget from "@/components/dv/PrayerWidget";
 import ArticleCard from "@/components/shared/ArticleCard";
+import LiveBanner from "@/components/shared/LiveBanner";
 import { formatDaysLeftLabel, getCategory, getDaysLeft } from "@/lib/data";
 import { homeConfigDv as cfg } from "@/lib/homeConfig.dv";
 import type { Article, CategorySlug } from "@/lib/types";
@@ -43,6 +44,8 @@ export default function HomePageClient({
       <Header enHref="/en" />
       <Nav />
       <main className="wrap">
+        <LiveBanner liveNowLabel="މިހާރު ލައިވް" youtubeLabel="ޔޫޓިއުބް ލައިވް" facebookLabel="ފޭސްބުކް ލައިވް" />
+
         <div className="ad-slot">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={cfg.adBanner} alt="Sale advertisement" />

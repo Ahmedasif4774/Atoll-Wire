@@ -1,0 +1,74 @@
+import { NextResponse } from "next/server";
+import { sanityClient } from "@/lib/sanity/client";
+import { liveSettingsQuery } from "@/lib/sanity/queries";
+
+// YouTube channel handle to watch. Change this (and redeploy) if the
+// channel ever changes — it's a stable identifier, unlike a video ID.
+const YOUTUBE_HANDLE = "NiyaaAcademy";
+
+// Two separate cache lifetimes, both driven by plain fetch-level
+// revalidate (no route-level `export const revalidate`, since these two
+// calls genuinely want different freshness):
+//  - The handle -> channelId lookup essentially never changes, so it's
+//    cached for a full day. This also means the very first request each
+//    day is the only one that spends a YouTube quota unit on it.
+//  - The actual "is this channel live right now" check needs to be fresh
+//    enough that the banner shows up promptly once a stream starts and
+//    disappears promptly once it ends, so it's cached for only 30 seconds.
+const CHANNEL_ID_REVALIDATE = 60 * 60 * 24;
+const LIVE_CHECK_REVALIDATE = 30;
+
+async function getYouTubeLiveVideoId(): Promise<string | null> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    // No key configured yet — fail closed (banner just stays hidden for
+    // YouTube) rather than throwing, so the rest of the site is unaffected.
+    return null;
+  }
+
+  try {
+    const channelRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${YOUTUBE_HANDLE}&key=${apiKey}`,
+      { next: { revalidate: CHANNEL_ID_REVALIDATE } }
+    );
+    if (!channelRes.ok) throw new Error(`channels.list responded ${channelRes.status}`);
+    const channelBody = await channelRes.json();
+    const channelId: string | undefined = channelBody?.items?.[0]?.id;
+    if (!channelId) return null;
+
+    const liveRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${apiKey}`,
+      { next: { revalidate: LIVE_CHECK_REVALIDATE } }
+    );
+    if (!liveRes.ok) throw new Error(`search.list responded ${liveRes.status}`);
+    const liveBody = await liveRes.json();
+    const videoId: string | undefined = liveBody?.items?.[0]?.id?.videoId;
+    return videoId ?? null;
+  } catch (err) {
+    console.error("YouTube live check failed:", err);
+    return null;
+  }
+}
+
+async function getFacebookLiveUrl(): Promise<string | null> {
+  try {
+    const settings = await sanityClient.fetch(liveSettingsQuery);
+    const url: string | undefined = settings?.facebookLiveUrl;
+    return url && url.trim() ? url.trim() : null;
+  } catch (err) {
+    console.error("Failed to read liveSettings from Sanity:", err);
+    return null;
+  }
+}
+
+export async function GET() {
+  const [youtubeVideoId, facebookLiveUrl] = await Promise.all([
+    getYouTubeLiveVideoId(),
+    getFacebookLiveUrl(),
+  ]);
+
+  return NextResponse.json({
+    youtube: youtubeVideoId ? { videoId: youtubeVideoId } : null,
+    facebook: facebookLiveUrl ? { url: facebookLiveUrl } : null,
+  });
+}

@@ -101,3 +101,10 @@ export const relatedArticlesQuery = /* groq */ `
   *[_type == "article" && slug.current != $slug && category->slug.current == $category && ${APPROVED}]
     | order(publishedAt desc) ${articleProjection}
 `;
+
+// Singleton document (lib/sanity/schemaTypes/liveSettings.ts) holding the
+// manually-pasted Facebook Live URL. [0] just takes whichever document
+// happens to exist first — there should only ever be one.
+export const liveSettingsQuery = /* groq */ `
+  *[_type == "liveSettings"][0] { facebookLiveUrl }
+`;

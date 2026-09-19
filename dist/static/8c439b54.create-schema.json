@@ -1,0 +1,737 @@
+[
+  {
+    "fields": [
+      {
+        "options": {
+          "list": [
+            {
+              "title": "Draft",
+              "value": "draft"
+            },
+            {
+              "title": "Pending Review",
+              "value": "pendingReview"
+            },
+            {
+              "title": "Approved (live on site)",
+              "value": "approved"
+            }
+          ],
+          "layout": "radio"
+        },
+        "initialValue": "draft",
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "valid",
+                "constraint": [
+                  "draft",
+                  "pendingReview",
+                  "approved"
+                ]
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Controls whether this article is visible on the live website. Journalists write and save as Draft, then move it to Pending Review when ready. The article only appears on AtollWire once an editor sets this to Approved — saving or even publishing the document in Sanity does NOT make it public on its own.",
+        "name": "status",
+        "type": "string"
+      },
+      {
+        "options": {
+          "source": "titleEn",
+          "maxLength": 96
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Shared by both language versions, e.g. \"harbor\" → /article/harbor and /en/article/harbor.",
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "to": [
+          {
+            "type": "category"
+          }
+        ],
+        "name": "category",
+        "type": "reference"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "to": [
+          {
+            "type": "author"
+          }
+        ],
+        "name": "author",
+        "type": "reference"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "publishedAt",
+        "type": "datetime",
+        "title": "Published date"
+      },
+      {
+        "initialValue": false,
+        "description": "Eligible for the homepage hero / editor's-pick slots.",
+        "name": "featured",
+        "type": "boolean"
+      },
+      {
+        "initialValue": false,
+        "description": "Shown in the \"Popular News\" sidebar on category pages. Not in the original Phase 0 spec — added to model that sidebar as data instead of a hardcoded list; safe to ignore if you don't want it.",
+        "name": "popular",
+        "type": "boolean"
+      },
+      {
+        "options": {
+          "hotspot": true
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "heroImage",
+        "type": "image",
+        "title": "Hero image"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "titleDv",
+        "type": "string",
+        "title": "Title"
+      },
+      {
+        "rows": 2,
+        "name": "dekDv",
+        "type": "text",
+        "title": "Dek (standfirst)"
+      },
+      {
+        "name": "heroImageAltDv",
+        "type": "string",
+        "title": "Hero image alt text"
+      },
+      {
+        "name": "captionDv",
+        "type": "string",
+        "title": "Photo caption"
+      },
+      {
+        "of": [
+          {
+            "marks": {
+              "annotations": [
+                {
+                  "i18nTitleKey": "inputs.portable-text.annotation.link",
+                  "options": {
+                    "modal": {
+                      "type": "popover"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "validation": [
+                        {
+                          "rules": [
+                            {
+                              "flag": "uri",
+                              "constraint": {
+                                "options": {
+                                  "scheme": [
+                                    "/^http$/",
+                                    "/^https$/",
+                                    "/^tel$/",
+                                    "/^mailto$/"
+                                  ],
+                                  "allowRelative": true,
+                                  "relativeOnly": false,
+                                  "allowCredentials": false
+                                }
+                              }
+                            }
+                          ],
+                          "level": "error"
+                        }
+                      ],
+                      "description": "A valid web, email, phone, or relative link.",
+                      "name": "href",
+                      "type": "url",
+                      "title": "Link"
+                    }
+                  ],
+                  "name": "link",
+                  "type": "object"
+                }
+              ],
+              "decorators": [
+                {
+                  "value": "strong",
+                  "title": "Strong"
+                },
+                {
+                  "value": "em",
+                  "title": "Italic"
+                },
+                {
+                  "value": "code",
+                  "title": "Code"
+                },
+                {
+                  "value": "underline",
+                  "title": "Underline"
+                },
+                {
+                  "value": "strike-through",
+                  "title": "Strike"
+                }
+              ]
+            },
+            "lists": [
+              {
+                "value": "bullet",
+                "title": "Bulleted list"
+              },
+              {
+                "value": "number",
+                "title": "Numbered list"
+              }
+            ],
+            "styles": [
+              {
+                "value": "normal",
+                "title": "Normal"
+              },
+              {
+                "value": "h1",
+                "title": "Heading 1"
+              },
+              {
+                "value": "h2",
+                "title": "Heading 2"
+              },
+              {
+                "value": "h3",
+                "title": "Heading 3"
+              },
+              {
+                "value": "h4",
+                "title": "Heading 4"
+              },
+              {
+                "value": "h5",
+                "title": "Heading 5"
+              },
+              {
+                "value": "h6",
+                "title": "Heading 6"
+              },
+              {
+                "value": "blockquote",
+                "title": "Quote"
+              }
+            ],
+            "of": [],
+            "type": "block"
+          },
+          {
+            "type": "image"
+          }
+        ],
+        "name": "bodyDv",
+        "type": "array",
+        "title": "Body"
+      },
+      {
+        "options": {
+          "layout": "tags"
+        },
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "tagsDv",
+        "type": "array",
+        "title": "Tags"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "titleEn",
+        "type": "string",
+        "title": "Title"
+      },
+      {
+        "rows": 2,
+        "name": "dekEn",
+        "type": "text",
+        "title": "Dek (standfirst)"
+      },
+      {
+        "name": "heroImageAltEn",
+        "type": "string",
+        "title": "Hero image alt text"
+      },
+      {
+        "name": "captionEn",
+        "type": "string",
+        "title": "Photo caption"
+      },
+      {
+        "of": [
+          {
+            "marks": {
+              "annotations": [
+                {
+                  "i18nTitleKey": "inputs.portable-text.annotation.link",
+                  "options": {
+                    "modal": {
+                      "type": "popover"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "validation": [
+                        {
+                          "rules": [
+                            {
+                              "flag": "uri",
+                              "constraint": {
+                                "options": {
+                                  "scheme": [
+                                    "/^http$/",
+                                    "/^https$/",
+                                    "/^tel$/",
+                                    "/^mailto$/"
+                                  ],
+                                  "allowRelative": true,
+                                  "relativeOnly": false,
+                                  "allowCredentials": false
+                                }
+                              }
+                            }
+                          ],
+                          "level": "error"
+                        }
+                      ],
+                      "description": "A valid web, email, phone, or relative link.",
+                      "name": "href",
+                      "type": "url",
+                      "title": "Link"
+                    }
+                  ],
+                  "name": "link",
+                  "type": "object"
+                }
+              ],
+              "decorators": [
+                {
+                  "value": "strong",
+                  "title": "Strong"
+                },
+                {
+                  "value": "em",
+                  "title": "Italic"
+                },
+                {
+                  "value": "code",
+                  "title": "Code"
+                },
+                {
+                  "value": "underline",
+                  "title": "Underline"
+                },
+                {
+                  "value": "strike-through",
+                  "title": "Strike"
+                }
+              ]
+            },
+            "lists": [
+              {
+                "value": "bullet",
+                "title": "Bulleted list"
+              },
+              {
+                "value": "number",
+                "title": "Numbered list"
+              }
+            ],
+            "styles": [
+              {
+                "value": "normal",
+                "title": "Normal"
+              },
+              {
+                "value": "h1",
+                "title": "Heading 1"
+              },
+              {
+                "value": "h2",
+                "title": "Heading 2"
+              },
+              {
+                "value": "h3",
+                "title": "Heading 3"
+              },
+              {
+                "value": "h4",
+                "title": "Heading 4"
+              },
+              {
+                "value": "h5",
+                "title": "Heading 5"
+              },
+              {
+                "value": "h6",
+                "title": "Heading 6"
+              },
+              {
+                "value": "blockquote",
+                "title": "Quote"
+              }
+            ],
+            "of": [],
+            "type": "block"
+          },
+          {
+            "type": "image"
+          }
+        ],
+        "name": "bodyEn",
+        "type": "array",
+        "title": "Body"
+      },
+      {
+        "options": {
+          "layout": "tags"
+        },
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "tagsEn",
+        "type": "array",
+        "title": "Tags"
+      },
+      {
+        "description": "Fill this in only for articles in the Help/Appeals category.",
+        "fields": [
+          {
+            "name": "raisedAmount",
+            "type": "number",
+            "title": "Amount raised (MVR)"
+          },
+          {
+            "name": "targetAmount",
+            "type": "number",
+            "title": "Target amount (MVR)"
+          },
+          {
+            "description": "Shows a \"N days left\" countdown badge on this appeal wherever it's shown. Leave blank for appeals with no fixed deadline — the badge just won't appear.",
+            "name": "deadlineDate",
+            "type": "date",
+            "title": "Campaign deadline"
+          },
+          {
+            "of": [
+              {
+                "fields": [
+                  {
+                    "name": "labelDv",
+                    "type": "string",
+                    "title": "Label (Dhivehi)"
+                  },
+                  {
+                    "name": "labelEn",
+                    "type": "string",
+                    "title": "Label (English)"
+                  },
+                  {
+                    "name": "value",
+                    "type": "string"
+                  }
+                ],
+                "type": "object",
+                "name": "bankDetailRow"
+              }
+            ],
+            "name": "bankDetails",
+            "type": "array",
+            "title": "Bank details"
+          },
+          {
+            "rows": 2,
+            "name": "noteDv",
+            "type": "text",
+            "title": "Note (Dhivehi)"
+          },
+          {
+            "rows": 2,
+            "name": "noteEn",
+            "type": "text",
+            "title": "Note (English)"
+          },
+          {
+            "of": [
+              {
+                "fields": [
+                  {
+                    "name": "name",
+                    "type": "string",
+                    "title": "Document name"
+                  },
+                  {
+                    "name": "file",
+                    "type": "file"
+                  },
+                  {
+                    "name": "meta",
+                    "type": "string",
+                    "title": "Meta text (e.g. \"PDF · 420 KB\")"
+                  }
+                ],
+                "type": "object",
+                "name": "appealDocument"
+              }
+            ],
+            "name": "documents",
+            "type": "array",
+            "title": "Supporting documents"
+          }
+        ],
+        "name": "appeal",
+        "type": "object",
+        "title": "Appeal / donation details"
+      }
+    ],
+    "name": "article",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "nameDv",
+        "type": "string",
+        "title": "Name (Dhivehi)"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "nameEn",
+        "type": "string",
+        "title": "Name (English)"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "max",
+                "constraint": 3
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Shown in the round avatar badge on article pages (e.g. \"އވ\").",
+        "name": "initialsDv",
+        "type": "string",
+        "title": "Initials (Dhivehi)"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "max",
+                "constraint": 3
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Shown in the round avatar badge on article pages (e.g. \"AW\").",
+        "name": "initialsEn",
+        "type": "string",
+        "title": "Initials (English)"
+      },
+      {
+        "options": {
+          "hotspot": true
+        },
+        "name": "avatar",
+        "type": "image",
+        "title": "Photo"
+      }
+    ],
+    "name": "author",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "options": {
+          "source": "labelEn"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "labelDv",
+        "type": "string",
+        "title": "Label (Dhivehi)"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "labelEn",
+        "type": "string",
+        "title": "Label (English)"
+      }
+    ],
+    "name": "category",
+    "type": "document"
+  }
+]
