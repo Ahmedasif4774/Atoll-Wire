@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getLiveDates } from "@/lib/liveDate";
 
 interface PrayerTime {
   icon: string;
@@ -46,8 +47,8 @@ function findNextIndex(): number {
 export default function PrayerWidget({
   temp = "31°C",
   weatherDesc = "Malé · Partly cloudy",
-  gregDate = "7 September 2026",
-  hijriDate = "25 Rabi' al-Awwal 1448 AH",
+  gregDate,
+  hijriDate,
 }: {
   temp?: string;
   weatherDesc?: string;
@@ -62,6 +63,20 @@ export default function PrayerWidget({
     return () => clearInterval(id);
   }, []);
 
+  // gregDate/hijriDate used to default to strings hard-coded at build time.
+  // When the caller doesn't pass an explicit date (the homepage never
+  // does), compute today's real date instead, client-side only — same
+  // reasoning as the header date fix.
+  const [liveDates, setLiveDates] = useState({ gregDate: "", hijriDate: "" });
+  useEffect(() => {
+    const update = () => setLiveDates(getLiveDates("en"));
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
+  const displayGregDate = gregDate ?? liveDates.gregDate;
+  const displayHijriDate = hijriDate ?? liveDates.hijriDate;
+
   return (
     <div className="hero-prayer-mini">
       <div className="hpm-top">
@@ -73,8 +88,8 @@ export default function PrayerWidget({
           </div>
         </div>
         <div className="hpm-dates">
-          <div className="hpm-greg">{gregDate}</div>
-          <div className="hpm-hijri">{hijriDate}</div>
+          <div className="hpm-greg">{displayGregDate}</div>
+          <div className="hpm-hijri">{displayHijriDate}</div>
         </div>
       </div>
       <div className="hpm-times">

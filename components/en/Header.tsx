@@ -3,15 +3,27 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/components/dv/ThemeToggle";
+import { getLiveDates } from "@/lib/liveDate";
 import type { Article } from "@/lib/types";
-
-const DECORATIVE_DATE = "Monday, September 7, 2026";
 
 export default function Header({ dvHref }: { dvHref: string }) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<Article[]>([]);
   const boxRef = useRef<HTMLDivElement>(null);
+
+  // The header date used to be a hard-coded string frozen at whatever day
+  // the site was last built. Compute it from the real clock instead, and
+  // only on the client (after mount) so the server-rendered/prerendered
+  // markup — which can be stale by the time a visitor loads the page —
+  // never fights with what the visitor's browser knows "today" to be.
+  const [headerDate, setHeaderDate] = useState("");
+  useEffect(() => {
+    const update = () => setHeaderDate(getLiveDates("en").headerDate);
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   // Live search now goes through /api/search instead of calling
   // lib/data.ts's searchArticles() directly — that function fetches from
@@ -64,7 +76,7 @@ export default function Header({ dvHref }: { dvHref: string }) {
           Atoll<span style={{ color: "var(--coral)" }}>Wire</span>
         </Link>
         <div className="header-utils">
-          <span className="header-date">{DECORATIVE_DATE}</span>
+          <span className="header-date">{headerDate}</span>
           <ThemeToggle />
           <Link
             href={dvHref}
