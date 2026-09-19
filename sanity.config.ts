@@ -1,16 +1,26 @@
-// Sanity Studio config (Phase 1). Run `npx sanity dev` (after `npm install`)
-// to open the Studio locally at localhost:3333, or `npx sanity deploy` to
-// host it at <project>.sanity.studio.
+// Sanity Studio config. The Studio is hosted standalone by Sanity itself at
+// https://atollwire.sanity.studio (via `npx sanity deploy`) rather than
+// embedded in the Next.js app — the embedded app/studio/[[...tool]] route
+// hit an unresolved production bug, so this standalone deployment is the
+// one actually in use.
 //
-// You'll need a free Sanity project first: run `npx sanity init` in this
-// folder, which will create the project and fill in the ids below (or set
-// them directly in .env.local — see .env.example).
+// projectId/dataset fall back to hardcoded values rather than relying
+// purely on NEXT_PUBLIC_SANITY_PROJECT_ID / NEXT_PUBLIC_SANITY_DATASET
+// being set in the environment: `sanity deploy`'s own build step doesn't
+// read Next.js's .env.local the way `next build` does, so those env vars
+// are typically undefined during a Studio deploy — without a real
+// fallback here, the deployed Studio silently bakes in the literal
+// placeholder string "your-project-id" and every login then fails with
+// "You are not a member of this project or the project does not exist"
+// (that placeholder isn't a real project). Neither value below is a
+// secret — both are public identifiers already visible in this project's
+// URLs — so hardcoding them is safe.
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 import { visionTool } from "@sanity/vision";
 import { schemaTypes } from "./lib/sanity/schemaTypes";
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "tinn4qy2";
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 
 export default defineConfig({
@@ -18,10 +28,6 @@ export default defineConfig({
   title: "AtollWire",
   projectId,
   dataset,
-  // This must match the route the Studio is embedded at (app/studio/[[...tool]])
-  // so Sanity's own router knows "/studio" is its base and not a tool name —
-  // without this it was reading "studio" itself as an unknown tool.
-  basePath: "/studio",
   plugins: [structureTool(), visionTool()],
   schema: {
     types: schemaTypes,
