@@ -9,17 +9,33 @@ interface PrayerTime {
   time: string; // "HH:MM"
 }
 
-// Same 6 daily prayer times shown on the original static homepage. These
-// are demo placeholder times for Malé — wire up a real prayer-times API
-// later if this goes live.
-const TIMES: PrayerTime[] = [
-  { icon: "🌙", name: "Fajr", time: "04:49" },
-  { icon: "🌅", name: "Sunrise", time: "05:59" },
-  { icon: "☀️", name: "Dhuhr", time: "12:04" },
-  { icon: "🌤️", name: "Asr", time: "15:07" },
-  { icon: "🌇", name: "Maghrib", time: "18:09" },
-  { icon: "✨", name: "Isha", time: "19:18" },
+type PrayerKey = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
+
+const PRAYER_META: { key: PrayerKey; icon: string; name: string }[] = [
+  { key: "fajr", icon: "🌙", name: "Fajr" },
+  { key: "sunrise", icon: "🌅", name: "Sunrise" },
+  { key: "dhuhr", icon: "☀️", name: "Dhuhr" },
+  { key: "asr", icon: "🌤️", name: "Asr" },
+  { key: "maghrib", icon: "🌇", name: "Maghrib" },
+  { key: "isha", icon: "✨", name: "Isha" },
 ];
+
+// Shown until the live /api/prayer-times call resolves, and kept as a
+// fallback if that request ever fails — so the card never renders blank.
+// These are the same demo placeholder times the original static homepage
+// used for Malé.
+const FALLBACK_TIMES: Record<PrayerKey, string> = {
+  fajr: "04:49",
+  sunrise: "05:59",
+  dhuhr: "12:04",
+  asr: "15:07",
+  maghrib: "18:09",
+  isha: "19:18",
+};
+
+function buildTimes(times: Record<PrayerKey, string>): PrayerTime[] {
+  return PRAYER_META.map((m) => ({ icon: m.icon, name: m.name, time: times[m.key] }));
+}
 
 function getMaldivesNowMinutes() {
   const now = new Date();
@@ -28,11 +44,11 @@ function getMaldivesNowMinutes() {
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
-function findNextIndex(): number {
+function findNextIndex(times: PrayerTime[]): number {
   const nowMinutes = getMaldivesNowMinutes();
   let bestIdx = 0;
   let bestDiff = Infinity;
-  TIMES.forEach((t, idx) => {
+  times.forEach((t, idx) => {
     const [h, m] = t.time.split(":").map(Number);
     let diff = h * 60 + m - nowMinutes;
     if (diff < 0) diff += 24 * 60;
@@ -57,11 +73,49 @@ export default function PrayerWidget({
 }) {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
+  // Live prayer times for Malé, fetched from our own /api/prayer-times
+  // route (which in turn asks the Aladhan calculation API) instead of the
+  // fixed placeholder times the original static homepage used. Fetched
+  // once on mount and re-checked hourly — the times only change once a
+  // day, so there's no reason to poll more often than that. Falls back to
+  // FALLBACK_TIMES if the request ever fails, so the card still shows
+  // something reasonable rather than breaking.
+  const [times, setTimes] = useState<Record<PrayerKey, string>>(FALLBACK_TIMES);
   useEffect(() => {
-    setActiveIdx(findNextIndex());
-    const id = setInterval(() => setActiveIdx(findNextIndex()), 60000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/prayer-times");
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        if (!cancelled && !data.error) {
+          setTimes({
+            fajr: data.fajr,
+            sunrise: data.sunrise,
+            dhuhr: data.dhuhr,
+            asr: data.asr,
+            maghrib: data.maghrib,
+            isha: data.isha,
+          });
+        }
+      } catch {
+        // Keep showing FALLBACK_TIMES.
+      }
+    }
+    load();
+    const id = setInterval(load, 60 * 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
+  const displayTimes = buildTimes(times);
+
+  useEffect(() => {
+    setActiveIdx(findNextIndex(displayTimes));
+    const id = setInterval(() => setActiveIdx(findNextIndex(displayTimes)), 60000);
+    return () => clearInterval(id);
+  }, [times]);
 
   // gregDate/hijriDate used to default to strings hard-coded at build time.
   // When the caller doesn't pass an explicit date (the homepage never
@@ -93,7 +147,7 @@ export default function PrayerWidget({
         </div>
       </div>
       <div className="hpm-times">
-        {TIMES.map((t, idx) => (
+        {displayTimes.map((t, idx) => (
           <div
             key={t.name}
             className={`hpm-time-item${idx === activeIdx ? " hpm-active" : ""}`}
