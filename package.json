@@ -13,20 +13,23 @@
     "studio:deploy": "sanity deploy"
   },
   "dependencies": {
+    "@sanity/client": "^6.21.3",
+    "@sanity/image-url": "^1.2.0",
+    "groq": "^3.51.0",
     "next": "^14.2.5",
+    "next-sanity": "^9.12.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "styled-jsx": "5.1.6",
-    "@sanity/client": "^6.21.3",
-    "@sanity/image-url": "^1.0.2",
-    "groq": "^3.51.0"
+    "react-is": "^18.3.1",
+    "styled-components": "^6.5.3",
+    "styled-jsx": "5.1.6"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
+    "@sanity/vision": "^3.99.0",
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "sanity": "^3.57.0",
-    "@sanity/vision": "^3.57.0"
+    "sanity": "^3.99.0",
+    "typescript": "^5.5.4"
   }
 }

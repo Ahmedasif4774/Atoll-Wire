@@ -14,11 +14,34 @@ if (!projectId) {
   );
 }
 
+// The "production" dataset turned out to be set to Private read access
+// (confirmed by testing directly: an anonymous request only ever sees
+// image asset documents, never the article/category/author documents —
+// which is exactly what Sanity does for a private dataset, since asset
+// files are always served publicly through the CDN regardless of the
+// dataset's own visibility setting). Sanity Studio/Vision could always see
+// everything because that tool uses your logged-in session, which has
+// full access regardless of the dataset's public/private setting.
+//
+// Rather than flipping the dataset to Public (which would let anyone on
+// the internet read every article and appeal — including ones not yet
+// approved — directly through Sanity's API, bypassing the approval
+// workflow entirely), the fix is to have the server authenticate every
+// read with the same API token used for the migration script. This token
+// lives only in SANITY_API_TOKEN (no NEXT_PUBLIC_ prefix), so Next.js
+// never sends it to the browser — it's only ever used here, server-side.
+//
+// useCdn is turned off unconditionally: Sanity's CDN (apicdn.sanity.io)
+// doesn't honor the Authorization header the same way the regular API
+// does, so mixing a token with useCdn:true can silently serve stale or
+// empty results on a private dataset. This site is small enough that the
+// CDN's speed benefit isn't worth that risk.
 export const sanityClient = createClient({
   projectId: projectId || "",
   dataset,
   apiVersion: "2024-01-01",
-  useCdn: process.env.NODE_ENV === "production",
+  token: process.env.SANITY_API_TOKEN,
+  useCdn: false,
 });
 
 const builder = imageUrlBuilder(sanityClient);

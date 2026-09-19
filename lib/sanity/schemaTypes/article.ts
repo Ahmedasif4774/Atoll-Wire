@@ -21,6 +21,24 @@ export default defineType({
   ],
   fields: [
     defineField({
+      name: "status",
+      title: "Status",
+      description:
+        "Controls whether this article is visible on the live website. Journalists write and save as Draft, then move it to Pending Review when ready. The article only appears on AtollWire once an editor sets this to Approved — saving or even publishing the document in Sanity does NOT make it public on its own.",
+      type: "string",
+      options: {
+        list: [
+          { title: "Draft", value: "draft" },
+          { title: "Pending Review", value: "pendingReview" },
+          { title: "Approved (live on site)", value: "approved" },
+        ],
+        layout: "radio",
+      },
+      initialValue: "draft",
+      group: "meta",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: "slug",
       title: "Slug",
       description: "Shared by both language versions, e.g. \"harbor\" → /article/harbor and /en/article/harbor.",
@@ -137,6 +155,12 @@ export default defineType({
         defineField({ name: "raisedAmount", title: "Amount raised (MVR)", type: "number" }),
         defineField({ name: "targetAmount", title: "Target amount (MVR)", type: "number" }),
         defineField({
+          name: "deadlineDate",
+          title: "Campaign deadline",
+          description: "Shows a \"N days left\" countdown badge on this appeal wherever it's shown. Leave blank for appeals with no fixed deadline — the badge just won't appear.",
+          type: "date",
+        }),
+        defineField({
           name: "bankDetails",
           title: "Bank details",
           type: "array",
@@ -176,6 +200,11 @@ export default defineType({
     }),
   ],
   preview: {
-    select: { title: "titleEn", subtitle: "slug.current", media: "heroImage" },
+    select: { title: "titleEn", subtitle: "slug.current", media: "heroImage", status: "status" },
+    prepare({ title, subtitle, media, status }) {
+      const statusLabel =
+        status === "approved" ? "✅ Approved" : status === "pendingReview" ? "🕓 Pending Review" : "📝 Draft";
+      return { title, subtitle: `${statusLabel} · ${subtitle}`, media };
+    },
   },
 });

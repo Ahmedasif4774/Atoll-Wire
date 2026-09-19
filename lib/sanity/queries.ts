@@ -11,15 +11,13 @@
 //
 // Two fields on the mock Article type — timeAgo and readTime — are
 // pre-formatted strings in data/content.json, but Sanity only stores the
-// raw publishedAt datetime and the body content. Compute them at request
-// time instead of storing them:
-//   - timeAgo: a small helper (e.g. the `timeago.js` package, or a one-off
-//     function) turning `publishedAt` into "2 hrs ago".
-//   - readTime: a word-count helper over the plain text of bodyDv/bodyEn
-//     (there are small npm packages for this, e.g. `reading-time`, or just
-//     `Math.ceil(wordCount / 200) + " min read"`).
-// Do that formatting in the Sanity-backed lib/data.ts functions, after the
-// fetch, rather than in GROQ.
+// raw publishedAt datetime and the body content. lib/data.ts computes them
+// at request time from publishedAt/body after fetching, rather than in GROQ.
+//
+// Note on recentArticlesQuery/relatedArticlesQuery: these deliberately do
+// NOT slice the result in GROQ (no "[0...$limit]") — GROQ array slice
+// bounds need to be plain numbers, not query parameters, so the $limit
+// truncation happens in JS after the fetch instead (see lib/data.ts).
 
 const articleProjection = /* groq */ `{
   "slug": slug.current,
@@ -46,6 +44,7 @@ const articleProjection = /* groq */ `{
       "raisedAmount": appeal.raisedAmount,
       "targetAmount": appeal.targetAmount,
       "pctValue": round((appeal.raisedAmount / appeal.targetAmount) * 100),
+      "deadlineDate": appeal.deadlineDate,
       "bankDetails": appeal.bankDetails[]{
         "label": select($lang == "dv" => labelDv, labelEn),
         value
@@ -63,31 +62,42 @@ export const allCategoriesQuery = /* groq */ `
   }
 `;
 
+// Every query below filters on status == "approved" — this is the actual
+// approval gate. A journalist can write, save, and even "Publish" a document
+// in Sanity Studio; none of that makes it visible on the live site until an
+// editor flips its Status field to Approved (see lib/sanity/schemaTypes/
+// article.ts). Do not remove this filter from a query without adding an
+// equivalent check elsewhere, or unapproved drafts become publicly visible.
+const APPROVED = `status == "approved"`;
+
 export const articleBySlugQuery = /* groq */ `
-  *[_type == "article" && slug.current == $slug][0] ${articleProjection}
+  *[_type == "article" && slug.current == $slug && ${APPROVED}][0] ${articleProjection}
 `;
 
 export const allArticlesQuery = /* groq */ `
-  *[_type == "article"] | order(publishedAt desc) ${articleProjection}
+  *[_type == "article" && ${APPROVED}] | order(publishedAt desc) ${articleProjection}
 `;
 
 export const articlesByCategoryQuery = /* groq */ `
-  *[_type == "article" && category->slug.current == $category] | order(publishedAt desc) ${articleProjection}
+  *[_type == "article" && category->slug.current == $category && ${APPROVED}] | order(publishedAt desc) ${articleProjection}
 `;
 
 export const featuredArticlesQuery = /* groq */ `
-  *[_type == "article" && featured == true] | order(publishedAt desc) ${articleProjection}
+  *[_type == "article" && featured == true && ${APPROVED}] | order(publishedAt desc) ${articleProjection}
 `;
 
 export const popularArticlesQuery = /* groq */ `
-  *[_type == "article" && popular == true] | order(publishedAt desc) ${articleProjection}
+  *[_type == "article" && popular == true && ${APPROVED}] | order(publishedAt desc) ${articleProjection}
 `;
 
+// No slice here — lib/data.ts's getRecentArticles takes the first `limit`
+// results in JS after fetching.
 export const recentArticlesQuery = /* groq */ `
-  *[_type == "article" && slug.current != $excludeSlug] | order(publishedAt desc) [0...$limit] ${articleProjection}
+  *[_type == "article" && slug.current != $excludeSlug && ${APPROVED}] | order(publishedAt desc) ${articleProjection}
 `;
 
+// No slice here either — see recentArticlesQuery's comment above.
 export const relatedArticlesQuery = /* groq */ `
-  *[_type == "article" && slug.current != $slug && category->slug.current == $category]
-    | order(publishedAt desc) [0...$limit] ${articleProjection}
+  *[_type == "article" && slug.current != $slug && category->slug.current == $category && ${APPROVED}]
+    | order(publishedAt desc) ${articleProjection}
 `;

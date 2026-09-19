@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
-import { searchArticles } from "@/lib/data";
+import type { Article } from "@/lib/types";
 
 // Decorative date string shown in the header. The original static site
 // hard-coded this per page rather than computing it from the visitor's
@@ -14,9 +14,35 @@ const DECORATIVE_DATE = "ހޯމަ، 7 ސެޕްޓެމްބަރު 2026";
 export default function Header({ enHref }: { enHref: string }) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [results, setResults] = useState<Article[]>([]);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  const results = useMemo(() => searchArticles("dv", query, 6), [query]);
+  // Live search now goes through /api/search instead of calling
+  // lib/data.ts's searchArticles() directly — that function fetches from
+  // Sanity and is async/server-only, which a Client Component like this
+  // one can't call synchronously. A short debounce avoids firing a request
+  // on every single keystroke.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/search?lang=dv&q=${encodeURIComponent(q)}`, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => setResults(data.results ?? []))
+        .catch(() => {
+          // Ignore aborted/failed requests — an in-flight search that gets
+          // superseded by the next keystroke is expected, not an error.
+        });
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
 
   // Close the dropdown on an outside click, or on Escape while it's open —
   // the box stays mounted either way, only `isOpen` toggles its dropdown.

@@ -4,6 +4,7 @@ import Header from "@/components/dv/Header";
 import Nav from "@/components/dv/Nav";
 import Footer from "@/components/dv/Footer";
 import ArticleCard from "@/components/shared/ArticleCard";
+import ShareButtons from "@/components/shared/ShareButtons";
 import { formatDaysLeftLabel, getCategory, getDaysLeft } from "@/lib/data";
 import type { Article, CategorySlug } from "@/lib/types";
 
@@ -42,11 +43,7 @@ export default function ArticlePageClient({
                     </div>
                   </div>
                 </div>
-                <div className="article-share">
-                  <a href="#" aria-label="Share">🔗</a>
-                  <a href="#" aria-label="Share">💬</a>
-                  <a href="#" aria-label="Share">↗</a>
-                </div>
+                <ShareButtons title={article.title} lang="dv" />
               </div>
 
               <div className="article-hero-img">
@@ -297,25 +294,6 @@ export default function ArticlePageClient({
         .author-name {
           font-weight: 700;
           font-size: 14.5px;
-        }
-        .article-share {
-          display: flex;
-          gap: 8px;
-          direction: ltr;
-        }
-        .article-share a {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: 1px solid var(--line);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 14px;
-        }
-        .article-share a:hover {
-          border-color: var(--coral);
-          color: var(--coral);
         }
         .article-hero-img {
           aspect-ratio: 16/9;

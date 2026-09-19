@@ -7,13 +7,30 @@
  *
  * Usage:
  *   node scripts/migrate-to-sanity.mjs
- *   npx sanity dataset import sanity-migration.ndjson production
+ *   npx sanity dataset import sanity-migration.ndjson production --replace
  *
- * Why NDJSON + `sanity dataset import` instead of writing documents
- * directly with @sanity/client: the import CLI understands the special
- * "_sanityAsset": "image@<url>" marker below and will download each hero
- * image from Unsplash and upload it as a real Sanity asset for you, so this
- * script doesn't need to do its own async image-upload dance.
+ * Every migrated article is written with status: "approved" — these are
+ * your existing, already-live articles, so they should keep showing up on
+ * the site immediately after import rather than needing to be re-approved
+ * one by one in Sanity Studio. Anything NEW that a journalist writes from
+ * now on starts as Draft (see lib/sanity/schemaTypes/article.ts) and needs
+ * an editor to flip it to Approved before it appears.
+ *
+ * Requires a Sanity API token with write access (a plain `npx sanity dataset
+ * import` session can't be used from a standalone script). Get one at
+ * https://www.sanity.io/manage -> your project -> API -> Add API token
+ * (permissions: Editor), then add it to .env.local as:
+ *   SANITY_API_TOKEN="the token you copied"
+ *
+ * Why this script uploads images itself instead of letting `sanity dataset
+ * import` fetch them from Unsplash (which is what an earlier version of
+ * this script did, via a "_sanityAsset": "image@<url>" marker): that
+ * remote-fetch step turned out to fail intermittently and unpredictably —
+ * different photos failed on different runs — because it's Sanity's own
+ * import servers, not your computer, doing the fetching, so there was no
+ * way to test or retry it from here. Downloading each photo and uploading
+ * it directly over YOUR internet connection instead is far more reliable,
+ * and only needs to happen once per unique photo (repeats are cached).
  *
  * Two known data-quality issues in the ORIGINAL static site that this
  * script has to paper over — both called out again in the printed summary
@@ -32,13 +49,60 @@
  *      review the "Appeal / donation details" section of migrated help
  *      articles in the Studio before publishing.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { createClient } from "@sanity/client";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const IN = path.join(__dirname, "..", "data", "content.json");
 const OUT = path.join(__dirname, "..", "sanity-migration.ndjson");
+const ENV_FILE = path.join(__dirname, "..", ".env.local");
+
+// ---- Load .env.local by hand ----
+// This is a plain Node script (not Next.js), so .env.local isn't loaded
+// automatically the way it is for `npm run dev`/`next build`. This is a
+// deliberately tiny parser (KEY="value" or KEY=value, one per line, #
+// comments ignored) rather than adding a new dependency just for this.
+function loadEnvLocal() {
+  const env = {};
+  if (!existsSync(ENV_FILE)) return env;
+  const text = readFileSync(ENV_FILE, "utf-8");
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(trimmed);
+    if (!m) continue;
+    let value = m[2].trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    env[m[1]] = value;
+  }
+  return env;
+}
+
+const envLocal = loadEnvLocal();
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || envLocal.NEXT_PUBLIC_SANITY_PROJECT_ID;
+const dataset_ = process.env.NEXT_PUBLIC_SANITY_DATASET || envLocal.NEXT_PUBLIC_SANITY_DATASET || "production";
+const token = process.env.SANITY_API_TOKEN || envLocal.SANITY_API_TOKEN;
+
+if (!projectId) {
+  console.error("Missing NEXT_PUBLIC_SANITY_PROJECT_ID — check .env.local.");
+  process.exit(1);
+}
+if (!token) {
+  console.error("Missing SANITY_API_TOKEN.");
+  console.error("");
+  console.error("Get one at https://www.sanity.io/manage -> your project -> API -> Add API token");
+  console.error('(permissions: Editor), then add this line to .env.local: SANITY_API_TOKEN="<the token>"');
+  process.exit(1);
+}
+
+const sanityClient = createClient({ projectId, dataset: dataset_, apiVersion: "2024-01-01", token, useCdn: false });
 
 const dataset = JSON.parse(readFileSync(IN, "utf-8"));
 
@@ -60,6 +124,54 @@ function timeAgoToDate(timeAgo) {
   const n = parseInt(m[1], 10);
   const unitMs = /min/i.test(m[2]) ? 60_000 : 3_600_000;
   return new Date(now - n * unitMs).toISOString();
+}
+
+// ---- Upload every unique hero image directly, up front ----
+// Uploading over your own internet connection (instead of handing Sanity a
+// URL to fetch itself — see the file header comment for why) and caching
+// by URL so a photo reused across several articles only uploads once.
+async function uploadImageWithRetry(url, attempts = 3) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} fetching photo`);
+      const arrayBuffer = await res.arrayBuffer();
+      const filename = path.basename(new URL(url).pathname) || "hero.jpg";
+      const asset = await sanityClient.assets.upload("image", Buffer.from(arrayBuffer), { filename });
+      return asset._id;
+    } catch (err) {
+      if (attempt === attempts) throw err;
+      console.warn(`  Retry ${attempt}/${attempts - 1} after error uploading ${url}: ${err.message}`);
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+  throw new Error("unreachable");
+}
+
+const allHeroUrls = [...new Set(dataset.articles.map((a) => a.heroImage.url))];
+console.log(`Uploading ${allHeroUrls.length} unique hero images to Sanity...`);
+const assetIdByUrl = new Map();
+let uploadFailures = 0;
+for (let i = 0; i < allHeroUrls.length; i++) {
+  const url = allHeroUrls[i];
+  process.stdout.write(`  [${i + 1}/${allHeroUrls.length}] ${url} ... `);
+  try {
+    const assetId = await uploadImageWithRetry(url);
+    assetIdByUrl.set(url, assetId);
+    console.log("ok");
+  } catch (err) {
+    console.log(`FAILED (${err.message})`);
+    uploadFailures++;
+  }
+}
+if (uploadFailures > 0) {
+  console.warn(
+    `${uploadFailures} image(s) failed to upload after retries — those articles will be migrated WITHOUT a hero ` +
+      `image; add one manually in Studio afterwards. Re-running this script will only re-attempt uploads, so it's ` +
+      `safe to run again if you'd rather retry first.`
+  );
+} else {
+  console.log("All hero images uploaded.");
 }
 
 const docs = [];
@@ -154,6 +266,7 @@ function buildAppeal(dv, en) {
     _type: "object",
     raisedAmount: parseAmount(src.raisedText),
     targetAmount: parseAmount(src.targetText),
+    deadlineDate: src.deadlineDate,
     bankDetails,
     noteDv: dv?.appeal?.note,
     noteEn: en?.appeal?.note,
@@ -168,20 +281,27 @@ for (const [slug, { dv, en }] of bySlug) {
   }
   const authorRef = authorRefFor(dv.author, en.author);
   const appeal = buildAppeal(dv, en);
+  const heroAssetId = assetIdByUrl.get(en.heroImage.url);
 
   docs.push({
     _id: `article.${slug}`,
     _type: "article",
+    // Existing content is treated as already-approved so the site keeps
+    // showing what it currently shows right after import — see the file
+    // header comment.
+    status: "approved",
     slug: { _type: "slug", current: slug },
     category: { _type: "reference", _ref: categoryIdFor(dv.category) },
     author: authorRef,
     publishedAt: timeAgoToDate(en.timeAgo),
     featured: !!dv.featured,
     popular: !!dv.popular,
-    heroImage: {
-      _type: "image",
-      _sanityAsset: `image@${en.heroImage.url}`,
-    },
+    // Only set when the upload succeeded above — an article whose photo
+    // failed every retry is migrated without a heroImage rather than with
+    // a broken reference; add a real photo for it in Studio.
+    ...(heroAssetId
+      ? { heroImage: { _type: "image", asset: { _type: "reference", _ref: heroAssetId } } }
+      : {}),
     titleDv: dv.title,
     dekDv: dv.dek,
     heroImageAltDv: dv.heroImage.alt,
@@ -203,12 +323,8 @@ writeFileSync(OUT, docs.map((d) => JSON.stringify(d)).join("\n") + "\n");
 console.log(`Wrote ${docs.length} documents to ${path.relative(process.cwd(), OUT)}`);
 console.log(`  - ${dataset.categories.length} categories`);
 console.log(`  - ${authorIdByKey.size} authors`);
-console.log(`  - ${bySlug.size} articles`);
+console.log(`  - ${bySlug.size} articles (all marked status: approved)`);
 console.log("");
-console.log("Next steps:");
-console.log("  1. Create a Sanity project if you haven't: npx sanity init");
-console.log("  2. Import: npx sanity dataset import sanity-migration.ndjson production");
-console.log("     (add --replace if re-running after a previous import)");
-console.log("  3. Open the Studio (npm run studio) and spot-check the Help/Appeals");
-console.log("     articles' donation details — see the notes at the top of this");
-console.log("     script for the two known dv/en data mismatches in the source site.");
+console.log("Next step: import the documents (all photos are already uploaded, so this");
+console.log("part should be quick and shouldn't need any retries):");
+console.log("  npx sanity dataset import sanity-migration.ndjson production --replace");

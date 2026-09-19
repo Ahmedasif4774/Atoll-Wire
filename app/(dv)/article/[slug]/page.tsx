@@ -5,16 +5,19 @@ import { getAllArticles, getArticle, getRecentArticles, getRelatedArticles } fro
 // Server Component wrapper (needed for generateStaticParams) — see the
 // comment at the top of components/dv/ArticlePageClient.tsx for why the
 // actual page markup lives there instead of here.
-export function generateStaticParams() {
-  return getAllArticles("dv").map((a) => ({ slug: a.slug }));
+export async function generateStaticParams() {
+  const articles = await getAllArticles("dv");
+  return articles.map((a) => ({ slug: a.slug }));
 }
 
-export default function DvArticlePage({ params }: { params: { slug: string } }) {
-  const article = getArticle("dv", params.slug);
+export default async function DvArticlePage({ params }: { params: { slug: string } }) {
+  const article = await getArticle("dv", params.slug);
   if (!article) notFound();
 
-  const recent = getRecentArticles("dv", article.slug, 4);
-  const related = getRelatedArticles("dv", article.slug, 4);
+  const [recent, related] = await Promise.all([
+    getRecentArticles("dv", article.slug, 4),
+    getRelatedArticles("dv", article.slug, 4),
+  ]);
 
   return <ArticlePageClient article={article} recent={recent} related={related} />;
 }

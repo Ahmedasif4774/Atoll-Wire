@@ -18,6 +18,10 @@ export default defineConfig({
   title: "AtollWire",
   projectId,
   dataset,
+  // This must match the route the Studio is embedded at (app/studio/[[...tool]])
+  // so Sanity's own router knows "/studio" is its base and not a tool name —
+  // without this it was reading "studio" itself as an unknown tool.
+  basePath: "/studio",
   plugins: [structureTool(), visionTool()],
   schema: {
     types: schemaTypes,

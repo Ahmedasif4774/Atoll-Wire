@@ -278,8 +278,10 @@ export default function CategoryPageClient({
           top: 10px;
           right: 10px;
           z-index: 2;
-          background: rgba(14, 42, 71, 0.85);
-          color: #fff;
+          /* Fixed gold, not a theme variable, matching .cat-news elsewhere
+             on the site: this badge should look the same in both themes. */
+          background: #f2a93b;
+          color: #0e2a47;
           font-size: 11px;
           font-weight: 700;
           padding: 3px 10px;
