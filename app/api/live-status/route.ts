@@ -16,23 +16,9 @@ import { liveSettingsQuery } from "@/lib/sanity/queries";
 // intended job instead of being moot.
 export const dynamic = "force-dynamic";
 
-// Default YouTube channel handle to auto-detect when no manual link is
-// pasted into liveSettings.youtubeLiveUrl (see below). Change this (and
-// redeploy) if the channel ever changes — it's a stable identifier, unlike
-// a video ID.
-const YOUTUBE_HANDLE = "NiyaaAcademy";
-
-// Two separate cache lifetimes, both driven by plain fetch-level
-// revalidate (no route-level `export const revalidate`, since these two
-// calls genuinely want different freshness):
-//  - The handle -> channelId lookup essentially never changes, so it's
-//    cached for a full day. This also means the very first request each
-//    day is the only one that spends a YouTube quota unit on it.
-//  - The actual "is this video/channel live right now" check needs to be
-//    fresh enough that the banner shows up promptly once a stream starts
-//    and disappears promptly once it ends, so it's cached for only 30
-//    seconds.
-const CHANNEL_ID_REVALIDATE = 60 * 60 * 24;
+// How fresh the "is this specific pasted video live right now" check needs
+// to be, so the banner shows up promptly once a stream starts and
+// disappears promptly once it ends.
 const LIVE_CHECK_REVALIDATE = 30;
 
 // Pulls a video ID out of any of the URL shapes YouTube hands out for a
@@ -60,34 +46,6 @@ function extractYouTubeVideoId(rawUrl: string): string | null {
   }
 }
 
-// Auto-detects whether YOUTUBE_HANDLE's channel is currently live, with no
-// editor action needed at all: polls the channel itself, so it only ever
-// shows *that* channel's own stream.
-async function getChannelLiveVideoId(apiKey: string): Promise<string | null> {
-  try {
-    const channelRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${YOUTUBE_HANDLE}&key=${apiKey}`,
-      { next: { revalidate: CHANNEL_ID_REVALIDATE } }
-    );
-    if (!channelRes.ok) throw new Error(`channels.list responded ${channelRes.status}`);
-    const channelBody = await channelRes.json();
-    const channelId: string | undefined = channelBody?.items?.[0]?.id;
-    if (!channelId) return null;
-
-    const liveRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${apiKey}`,
-      { next: { revalidate: LIVE_CHECK_REVALIDATE } }
-    );
-    if (!liveRes.ok) throw new Error(`search.list responded ${liveRes.status}`);
-    const liveBody = await liveRes.json();
-    const videoId: string | undefined = liveBody?.items?.[0]?.id?.videoId;
-    return videoId ?? null;
-  } catch (err) {
-    console.error("YouTube channel live check failed:", err);
-    return null;
-  }
-}
-
 // Checks whether a specific, manually-pasted video is live *right now*.
 // This is what makes the manual link self-closing: unlike the Facebook
 // field, nobody has to remember to come back and clear this one once the
@@ -109,7 +67,13 @@ async function isVideoCurrentlyLive(videoId: string, apiKey: string): Promise<bo
   }
 }
 
+// YouTube only ever shows a stream when an editor deliberately pastes a
+// link into liveSettings.youtubeLiveUrl — there is no "default channel"
+// auto-detection. (An earlier version watched a specific channel handle
+// automatically; that was only for testing and has been removed.)
 async function getYouTubeLiveVideoId(manualUrl: string | null): Promise<string | null> {
+  if (!manualUrl) return null;
+
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
     // No key configured yet — fail closed (banner just stays hidden for
@@ -117,17 +81,10 @@ async function getYouTubeLiveVideoId(manualUrl: string | null): Promise<string |
     return null;
   }
 
-  // A manually-pasted link (any live event, not just YOUTUBE_HANDLE's own
-  // channel) takes priority over the auto-detected channel, since an
-  // editor pasting one is a deliberate "show this specific stream" choice.
-  if (manualUrl) {
-    const videoId = extractYouTubeVideoId(manualUrl);
-    if (!videoId) return null;
-    const isLive = await isVideoCurrentlyLive(videoId, apiKey);
-    return isLive ? videoId : null;
-  }
-
-  return getChannelLiveVideoId(apiKey);
+  const videoId = extractYouTubeVideoId(manualUrl);
+  if (!videoId) return null;
+  const isLive = await isVideoCurrentlyLive(videoId, apiKey);
+  return isLive ? videoId : null;
 }
 
 async function getLiveSettings(): Promise<{ facebookLiveUrl: string | null; youtubeLiveUrl: string | null }> {
