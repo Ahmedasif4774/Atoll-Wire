@@ -103,8 +103,8 @@ export const relatedArticlesQuery = /* groq */ `
 `;
 
 // Singleton document (lib/sanity/schemaTypes/liveSettings.ts) holding the
-// manually-pasted Facebook Live URL. [0] just takes whichever document
-// happens to exist first — there should only ever be one.
+// manually-pasted YouTube and Facebook Live URLs. [0] just takes whichever
+// document happens to exist first — there should only ever be one.
 export const liveSettingsQuery = /* groq */ `
-  *[_type == "liveSettings"][0] { facebookLiveUrl }
+  *[_type == "liveSettings"][0] { youtubeLiveUrl, facebookLiveUrl }
 `;
