@@ -94,6 +94,27 @@ async function getYouTubeLiveVideoId(manualUrl: string | null): Promise<string |
 
 async function getLiveSettings(): Promise<{ facebookLiveUrl: string | null; youtubeLiveUrl: string | null }> {
   try {
+    // --- TEMPORARY DEEP DEBUG ---
+    // Log exactly which Sanity project/dataset this deployment is reading
+    // from, and pull back EVERY liveSettings document with its raw _id
+    // (not just the projected [0] result) so we can see whether the
+    // document that Sanity's Vision tool finds actually exists here as a
+    // normal published id, or only as a "drafts.xxx" id (which would mean
+    // it was never really published to the live dataset — e.g. because it
+    // was published into a pinned Content Release instead of straight to
+    // "published").
+    console.log(
+      "[live-status debug] projectId:",
+      process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+      "dataset:",
+      process.env.NEXT_PUBLIC_SANITY_DATASET || "production (default)"
+    );
+    const allDocs = await sanityClient.fetch(
+      `*[_type == "liveSettings"]{ _id, _type, _rev, _updatedAt, youtubeLiveUrl, facebookLiveUrl }`
+    );
+    console.log("[live-status debug] ALL liveSettings docs (raw, unfiltered):", JSON.stringify(allDocs));
+    // --- END TEMPORARY DEEP DEBUG ---
+
     const settings = await sanityClient.fetch(liveSettingsQuery);
     console.log("[live-status debug] raw settings from Sanity:", JSON.stringify(settings));
     const facebookLiveUrl: string | undefined = settings?.facebookLiveUrl;
