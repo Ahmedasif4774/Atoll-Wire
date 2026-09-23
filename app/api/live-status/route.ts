@@ -60,6 +60,7 @@ async function isVideoCurrentlyLive(videoId: string, apiKey: string): Promise<bo
     if (!res.ok) throw new Error(`videos.list responded ${res.status}`);
     const body = await res.json();
     const liveBroadcastContent: string | undefined = body?.items?.[0]?.snippet?.liveBroadcastContent;
+    console.log("[live-status debug] videoId:", videoId, "liveBroadcastContent:", liveBroadcastContent);
     return liveBroadcastContent === "live";
   } catch (err) {
     console.error("YouTube manual-link live check failed:", err);
@@ -72,9 +73,11 @@ async function isVideoCurrentlyLive(videoId: string, apiKey: string): Promise<bo
 // auto-detection. (An earlier version watched a specific channel handle
 // automatically; that was only for testing and has been removed.)
 async function getYouTubeLiveVideoId(manualUrl: string | null): Promise<string | null> {
+  console.log("[live-status debug] manualUrl:", manualUrl);
   if (!manualUrl) return null;
 
   const apiKey = process.env.YOUTUBE_API_KEY;
+  console.log("[live-status debug] apiKey present:", Boolean(apiKey), "length:", apiKey ? apiKey.length : 0);
   if (!apiKey) {
     // No key configured yet — fail closed (banner just stays hidden for
     // YouTube) rather than throwing, so the rest of the site is unaffected.
@@ -82,14 +85,17 @@ async function getYouTubeLiveVideoId(manualUrl: string | null): Promise<string |
   }
 
   const videoId = extractYouTubeVideoId(manualUrl);
+  console.log("[live-status debug] extracted videoId:", videoId);
   if (!videoId) return null;
   const isLive = await isVideoCurrentlyLive(videoId, apiKey);
+  console.log("[live-status debug] isLive:", isLive);
   return isLive ? videoId : null;
 }
 
 async function getLiveSettings(): Promise<{ facebookLiveUrl: string | null; youtubeLiveUrl: string | null }> {
   try {
     const settings = await sanityClient.fetch(liveSettingsQuery);
+    console.log("[live-status debug] raw settings from Sanity:", JSON.stringify(settings));
     const facebookLiveUrl: string | undefined = settings?.facebookLiveUrl;
     const youtubeLiveUrl: string | undefined = settings?.youtubeLiveUrl;
     return {
