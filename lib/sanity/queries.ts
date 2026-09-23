@@ -103,8 +103,12 @@ export const relatedArticlesQuery = /* groq */ `
 `;
 
 // Singleton document (lib/sanity/schemaTypes/liveSettings.ts) holding the
-// manually-pasted YouTube and Facebook Live URLs. [0] just takes whichever
-// document happens to exist first — there should only ever be one.
+// manually-pasted YouTube and Facebook Live URLs. Deliberately NOT sliced
+// with "[0]" here — a live production bug showed that a bare
+// "*[_type == \"liveSettings\"][0] { ... }" query returned null even though
+// the exact same unsliced query reliably found the one matching document.
+// Slicing in JS after the fetch (same pattern already used by
+// recentArticlesQuery/relatedArticlesQuery above) sidesteps that entirely.
 export const liveSettingsQuery = /* groq */ `
-  *[_type == "liveSettings"][0] { youtubeLiveUrl, facebookLiveUrl }
+  *[_type == "liveSettings"] { youtubeLiveUrl, facebookLiveUrl }
 `;
