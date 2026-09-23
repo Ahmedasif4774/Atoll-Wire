@@ -92,7 +92,17 @@ async function getLiveSettings(): Promise<{ facebookLiveUrl: string | null; yout
     // liveSettingsQuery deliberately returns an array (no "[0]" in the GROQ
     // itself — see the comment on it in lib/sanity/queries.ts for why), so
     // the "take the first one" step happens here in JS instead.
-    const allSettings = await sanityClient.fetch(liveSettingsQuery);
+    //
+    // Explicit { cache: "no-store" } here because a stale result was
+    // observed in production: after publishing a NEW youtubeLiveUrl value
+    // in Sanity, this route kept returning the PREVIOUS value indefinitely
+    // (no amount of waiting or unique query strings on our own route's URL
+    // fixed it), even though route.ts already has `dynamic = "force-dynamic"`
+    // above. That setting is documented to default every fetch() in the
+    // route to no-store, but @sanity/client's own fetch() call apparently
+    // isn't reliably covered by that automatic override — so it's set
+    // explicitly here instead of relying on it.
+    const allSettings = await sanityClient.fetch(liveSettingsQuery, {}, { cache: "no-store" });
     const settings = Array.isArray(allSettings) ? allSettings[0] : allSettings;
     const facebookLiveUrl: string | undefined = settings?.facebookLiveUrl;
     const youtubeLiveUrl: string | undefined = settings?.youtubeLiveUrl;
