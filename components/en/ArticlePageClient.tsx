@@ -58,7 +58,7 @@ export default function ArticlePageClient({
                   }
                   if (block.type === "photo") {
                     return (
-                      <figure className="article-photo" key={i}>
+                      <figure className={`article-photo article-photo--${block.size ?? "large"}`} key={i}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={block.imageUrl} alt={block.alt ?? ""} />
                         {block.caption && <figcaption>{block.caption}</figcaption>}
@@ -387,6 +387,34 @@ export default function ArticlePageClient({
           font-size: 12.5px;
           color: var(--ink-soft);
           margin-top: 8px;
+        }
+        /* Size picker (Studio field: bodyEn/bodyDv photo block "size").
+           "large" is the original, only-ever behavior before this field
+           existed — full width of the text column — so it's intentionally
+           a no-op here. Small/medium shrink and center the photo within
+           that same column; full-width breaks out of the 760px column
+           edge-to-edge across the browser viewport. */
+        .article-photo--small {
+          max-width: 320px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .article-photo--medium {
+          max-width: 560px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .article-photo--full {
+          width: 100vw;
+          max-width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+        }
+        .article-photo--full img {
+          border-radius: 0;
         }
         .article-video {
           margin: 26px 0;
