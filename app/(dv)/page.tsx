@@ -48,53 +48,7 @@ function withPinnedAd(entries: ResolvedLatestEntry[], pinnedIndex: number): Reso
 }
 
 export default async function DvHomePage() {
-  // TEMPORARY DEBUG LOGGING — safe to ignore/remove later.
-  console.log(
-    `[DEBUG dv] projectId=${JSON.stringify(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID)} dataset=${JSON.stringify(
-      process.env.NEXT_PUBLIC_SANITY_DATASET
-    )}`
-  );
-  const { sanityClient } = await import("@/lib/sanity/client");
-  const rawCount = await sanityClient.fetch(`count(*[_type == "article"])`);
-  const approvedCount = await sanityClient.fetch(`count(*[_type == "article" && status == "approved"])`);
-  console.log(`[DEBUG dv] total article docs=${rawCount}, approved=${approvedCount}`);
-
-  // Bypass @sanity/client entirely and hit the raw HTTP API directly with
-  // Node's own fetch, to rule out anything the library might be doing
-  // differently from a normal browser request.
-  try {
-    const rawUrl = `https://${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${process.env.NEXT_PUBLIC_SANITY_DATASET}?query=${encodeURIComponent(`count(*[_type == "article"])`)}`;
-    const rawRes = await fetch(rawUrl, { cache: "no-store" });
-    const rawText = await rawRes.text();
-    console.log(`[DEBUG dv] raw fetch (no perspective) status=${rawRes.status} body=${rawText}`);
-
-    const rawUrlPublished = `${rawUrl}&perspective=published`;
-    const rawResPub = await fetch(rawUrlPublished, { cache: "no-store" });
-    const rawTextPub = await rawResPub.text();
-    console.log(`[DEBUG dv] raw fetch (perspective=published) status=${rawResPub.status} body=${rawTextPub}`);
-
-    // Same query again, but this time WITH the API token attached as an
-    // Authorization header — to test whether the dataset is silently
-    // requiring authentication for reads (which would explain why the
-    // logged-in Studio/Vision tool sees everything but anonymous requests
-    // see nothing, even though both hit the same "Public" dataset).
-    const token = process.env.SANITY_API_TOKEN;
-    console.log(`[DEBUG dv] token present? ${!!token}, length=${token ? token.length : 0}`);
-    const rawResAuth = await fetch(rawUrl, {
-      cache: "no-store",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const rawTextAuth = await rawResAuth.text();
-    console.log(`[DEBUG dv] raw fetch (with token) status=${rawResAuth.status} body=${rawTextAuth}`);
-  } catch (err) {
-    console.log(`[DEBUG dv] raw fetch THREW: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
   const all = await getAllArticles("dv");
-  console.log(
-    `[DEBUG dv] getAllArticles returned ${all.length} articles. Has "harbor"? ${all.some((a) => a.slug === "harbor")}`
-  );
-  console.log(`[DEBUG dv] all slugs: ${all.map((a) => a.slug).join(", ")}`);
   const bySlug = new Map(all.map((a) => [a.slug, a]));
   const req = (slug: string) => reqFrom(bySlug, slug);
 
