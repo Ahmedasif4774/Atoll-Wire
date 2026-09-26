@@ -200,7 +200,7 @@ export default function CategoryPageClient({
         }
         :global(.feature-major h2) {
           color: #fff;
-          font-size: 24px;
+          font-size: 26px;
           font-weight: 700;
           line-height: 1.4;
           display: -webkit-box;
@@ -256,7 +256,7 @@ export default function CategoryPageClient({
         }
         :global(.feature-secondary .tile h4) {
           color: #fff;
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 700;
           line-height: 1.4;
           display: -webkit-box;
@@ -328,7 +328,7 @@ export default function CategoryPageClient({
         }
         :global(.feed-item h3) {
           color: #fff;
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 700;
           line-height: 1.4;
           margin-bottom: 8px;
@@ -431,7 +431,7 @@ export default function CategoryPageClient({
           transform: scale(1.05);
         }
         :global(.pop-item h5) {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 600;
           line-height: 1.6;
         }
