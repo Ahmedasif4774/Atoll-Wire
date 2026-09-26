@@ -28,6 +28,16 @@ const sessions = new Map<string, number>();
 // drop it from the count.
 const ACTIVE_WINDOW_MS = 25_000;
 
+// This route was accepting any string as sessionId with no length limit
+// and no cap on how many distinct sessions get stored — since anyone can
+// POST here without authentication, that's an easy way to balloon this
+// process's memory (either a handful of huge sessionId strings, or a flood
+// of unique short ones). The client only ever sends a short generated id
+// (see components/*/PresenceTracker or similar), so real traffic never
+// needs more than a tiny fraction of these limits.
+const MAX_SESSION_ID_LENGTH = 128;
+const MAX_TRACKED_SESSIONS = 10_000;
+
 function activeCount(): number {
   const cutoff = Date.now() - ACTIVE_WINDOW_MS;
   for (const [id, lastSeen] of sessions) {
@@ -41,12 +51,20 @@ export async function POST(req: NextRequest) {
   const sessionId = body?.sessionId;
   const leaving = body?.leaving === true;
 
-  if (typeof sessionId === "string" && sessionId.length > 0) {
+  if (
+    typeof sessionId === "string" &&
+    sessionId.length > 0 &&
+    sessionId.length <= MAX_SESSION_ID_LENGTH
+  ) {
     if (leaving) {
       sessions.delete(sessionId);
-    } else {
+    } else if (sessions.has(sessionId) || sessions.size < MAX_TRACKED_SESSIONS) {
       sessions.set(sessionId, Date.now());
     }
+    // Once at the cap, silently drop new/unrecognized sessions rather than
+    // erroring — the "N reading now" count staying briefly approximate
+    // under an abuse flood is a much better failure mode than the process
+    // running out of memory.
   }
 
   return NextResponse.json({ count: activeCount() });
