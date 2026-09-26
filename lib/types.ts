@@ -39,7 +39,7 @@ export interface ImageRef {
 export type PhotoSize = "small" | "medium" | "large" | "full";
 
 export type ArticleBodyBlock =
-  | { type: "paragrap
+    | { type: "paragraph"; text: string }
   | { type: "ad"; imageUrl: string; alt: string }
   // An editor-inserted photo within the article body (distinct from the
   // required top-of-article heroImage) — alt text and caption are both
