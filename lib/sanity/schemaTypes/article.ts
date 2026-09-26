@@ -15,6 +15,22 @@ const bodyImageMember = defineArrayMember({
   fields: [
     defineField({ name: "alt", title: "Alt text", description: "Describes the photo for screen readers/SEO.", type: "string" }),
     defineField({ name: "caption", title: "Caption", type: "string" }),
+    defineField({
+      name: "size",
+      title: "Size",
+      description: "How wide this photo displays in the article body. Defaults to Large (the original full-column behavior) if left unset.",
+      type: "string",
+      options: {
+          list: [
+              { title: "Small", value: "small" },
+            { title: "Medium", value: "medium" },
+            { title: "Large", value: "large" },
+            { title: "Full-width", value: "full" },
+        ],
+        layout: "radio",
+    },
+      initialValue: "large",
+      }),
   ],
 });
 
