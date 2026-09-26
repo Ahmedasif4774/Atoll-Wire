@@ -1,5 +1,48 @@
 import { defineField, defineType, defineArrayMember } from "sanity";
 
+// Shared between bodyDv and bodyEn below (an editor building the Dhivehi
+// and English versions of the same story gets the identical photo/video
+// block everywhere) rather than defined twice and risking the two drifting.
+//
+// Keeping the type name "image" (the default for `type: "image"`, same as
+// before this feature existed) rather than renaming it to something like
+// "bodyImage" means any article that already had a plain image block in its
+// body keeps working unchanged — this just adds two optional fields to it.
+const bodyImageMember = defineArrayMember({
+  type: "image",
+  title: "Photo",
+  options: { hotspot: true },
+  fields: [
+    defineField({ name: "alt", title: "Alt text", description: "Describes the photo for screen readers/SEO.", type: "string" }),
+    defineField({ name: "caption", title: "Caption", type: "string" }),
+  ],
+});
+
+// A pasted YouTube/Vimeo link, not an uploaded video file — see
+// lib/videoEmbed.ts for why (turns this URL into an iframe embed at render
+// time) and components/*/ArticlePageClient.tsx for where it's rendered.
+const bodyVideoMember = defineArrayMember({
+  type: "object",
+  name: "videoEmbed",
+  title: "Video",
+  fields: [
+    defineField({
+      name: "url",
+      title: "Video URL",
+      description: "Paste a YouTube or Vimeo link (e.g. https://youtu.be/... or https://vimeo.com/...).",
+      type: "url",
+      validation: (Rule) => Rule.required().uri({ scheme: ["http", "https"] }),
+    }),
+    defineField({ name: "caption", title: "Caption", type: "string" }),
+  ],
+  preview: {
+    select: { title: "url", subtitle: "caption" },
+    prepare({ title, subtitle }) {
+      return { title: title || "Video", subtitle };
+    },
+  },
+});
+
 // Phase 0 content model, as agreed on the roadmap doc, implemented as a
 // single bilingual document per story (one document = one URL slug,
 // reachable at /article/[slug] in Dhivehi and /en/article/[slug] in
@@ -104,8 +147,9 @@ export default defineType({
     defineField({
       name: "bodyDv",
       title: "Body",
+      description: "Write your paragraphs, then use the + button to drop in a photo or a YouTube/Vimeo video link wherever it belongs in the story.",
       type: "array",
-      of: [defineArrayMember({ type: "block" }), defineArrayMember({ type: "image" })],
+      of: [defineArrayMember({ type: "block" }), bodyImageMember, bodyVideoMember],
       group: "dv",
     }),
     defineField({
@@ -125,8 +169,9 @@ export default defineType({
     defineField({
       name: "bodyEn",
       title: "Body",
+      description: "Write your paragraphs, then use the + button to drop in a photo or a YouTube/Vimeo video link wherever it belongs in the story.",
       type: "array",
-      of: [defineArrayMember({ type: "block" }), defineArrayMember({ type: "image" })],
+      of: [defineArrayMember({ type: "block" }), bodyImageMember, bodyVideoMember],
       group: "en",
     }),
     defineField({
