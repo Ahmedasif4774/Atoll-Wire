@@ -102,10 +102,39 @@ export default function ArticlePageClient({
               )}
 
               <div className="article-body">
-                {article.body.map((block, i) =>
-                  block.type === "paragraph" ? (
-                    <p key={i}>{block.text}</p>
-                  ) : (
+                {article.body.map((block, i) => {
+                  if (block.type === "paragraph") {
+                    return <p key={i}>{block.text}</p>;
+                  }
+                  if (block.type === "photo") {
+                    return (
+                      <figure className="article-photo" key={i}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={block.imageUrl} alt={block.alt ?? ""} />
+                        {block.caption && <figcaption>{block.caption}</figcaption>}
+                      </figure>
+                    );
+                  }
+                  if (block.type === "video") {
+                    // A pasted link Sanity/our own parser couldn't recognize
+                    // as YouTube/Vimeo — skip it rather than show a broken
+                    // iframe (see lib/videoEmbed.ts).
+                    if (!block.embedUrl) return null;
+                    return (
+                      <figure className="article-video" key={i}>
+                        <div className="article-video-frame">
+                          <iframe
+                            src={block.embedUrl}
+                            title={block.caption || "ވީޑިއޯ"}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                        {block.caption && <figcaption>{block.caption}</figcaption>}
+                      </figure>
+                    );
+                  }
+                  return (
                     <div className="in-article-ad" key={i}>
                       <div className="ad-label">އިޝްތިހާރު</div>
                       <div className="ad-slot">
@@ -113,8 +142,8 @@ export default function ArticlePageClient({
                         <img src={block.imageUrl} alt={block.alt} />
                       </div>
                     </div>
-                  )
-                )}
+                  );
+                })}
               </div>
 
               {article.tags.length > 0 && (
@@ -345,6 +374,42 @@ export default function ArticlePageClient({
           font-weight: 700;
           line-height: 1.8;
           color: var(--ink);
+        }
+        .article-photo {
+          margin: 26px 0;
+        }
+        .article-photo img {
+          width: 100%;
+          border-radius: 10px;
+          display: block;
+        }
+        .article-photo figcaption {
+          font-size: 12.5px;
+          color: var(--ink-soft);
+          margin-top: 8px;
+        }
+        .article-video {
+          margin: 26px 0;
+        }
+        .article-video-frame {
+          position: relative;
+          width: 100%;
+          padding-top: 56.25%;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #000;
+        }
+        .article-video-frame iframe {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+        }
+        .article-video figcaption {
+          font-size: 12.5px;
+          color: var(--ink-soft);
+          margin-top: 8px;
         }
         :global(.in-article-ad) {
           margin: 20px 0;
