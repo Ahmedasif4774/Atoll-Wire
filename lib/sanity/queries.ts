@@ -35,7 +35,17 @@ const articleProjection = /* groq */ `{
     "alt": select($lang == "dv" => heroImageAltDv, heroImageAltEn)
   },
   "caption": select($lang == "dv" => captionDv, captionEn),
-  "body": select($lang == "dv" => bodyDv, bodyEn),
+  // The raw body array's "block" (paragraph) and "videoEmbed" entries
+  // already carry every field lib/data.ts's blocksToBody() needs via the
+  // "..." spread below. An "image" entry only stores an asset REFERENCE
+  // though, so it needs its own projection to resolve that into an actual
+  // URL the <img> tag can use — same asset->url pattern as heroImage above.
+  "body": select($lang == "dv" => bodyDv, bodyEn)[]{
+    ...,
+    _type == "image" => {
+      "imageUrl": asset->url
+    }
+  },
   "tags": select($lang == "dv" => tagsDv, tagsEn),
   featured,
   popular,
