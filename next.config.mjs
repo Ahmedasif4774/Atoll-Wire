@@ -22,6 +22,35 @@ const nextConfig = {
       },
     ],
   },
+
+  // Baseline security headers — this app had none set before, which left
+  // every page open to being framed by another site (clickjacking) and
+  // browsers guessing content types instead of trusting the served one.
+  // frame-ancestors intentionally allows 'self' only (nothing here needs to
+  // be embedded elsewhere); it does NOT affect this site embedding OTHER
+  // sites' content (the YouTube/Facebook live-banner iframes, Sanity Studio
+  // link) since that's controlled by the iframed site's own headers, not
+  // ours.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "frame-ancestors 'self'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
