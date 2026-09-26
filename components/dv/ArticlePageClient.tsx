@@ -190,6 +190,23 @@ export default function ArticlePageClient({
           gap: 36px;
           align-items: start;
         }
+        /* Beyond a laptop-width screen this grid used to stay pinned at
+           1160px while .related-section below it kept widening (1200 ->
+           1320 -> 1480 at these same breakpoints), so on a wide monitor
+           the headline/sidebar area looked stranded in a narrow column
+           with a large empty margin while the related-news row below it
+           filled out further — matching these breakpoints keeps the two
+           sections' edges aligned all the way up. */
+        @media (min-width: 1440px) {
+          .article-page-grid {
+            max-width: 1320px;
+          }
+        }
+        @media (min-width: 1680px) {
+          .article-page-grid {
+            max-width: 1480px;
+          }
+        }
         .article-wrap {
           max-width: 760px;
         }
