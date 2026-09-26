@@ -27,6 +27,7 @@ import type {
   CategorySlug,
   ContentDataset,
   Lang,
+  PhotoSize,
 } from "./types";
 
 const dataset = raw as ContentDataset;
@@ -83,6 +84,10 @@ interface PortableBlock {
   imageUrl?: string;
   alt?: string;
   caption?: string;
+  // Present on an "image" block — how wide it should render. Older photo
+  // blocks saved before this field existed simply won't have it, which is
+  // why blocksToBody() below falls back to "large" (the original behavior).
+  size?: PhotoSize;
   // Present on a "videoEmbed" block — the raw URL an editor pasted in.
   url?: string;
 }
@@ -99,7 +104,9 @@ function blocksToBody(blocks: PortableBlock[] | undefined): ArticleBodyBlock[] {
         return { type: "paragraph", text: (b.children ?? []).map((c) => c.text ?? "").join("") };
       }
       if (b?._type === "image") {
-        return b.imageUrl ? { type: "photo", imageUrl: b.imageUrl, alt: b.alt, caption: b.caption } : null;
+        return b.imageUrl
+          ? { type: "photo", imageUrl: b.imageUrl, alt: b.alt, caption: b.caption, size: b.size ?? "large" }
+          : null;
       }
       if (b?._type === "videoEmbed") {
         return { type: "video", embedUrl: toVideoEmbedUrl(b.url), caption: b.caption };
