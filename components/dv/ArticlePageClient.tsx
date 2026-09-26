@@ -235,7 +235,7 @@ export default function ArticlePageClient({
           transform: scale(1.05);
         }
         :global(.sidebar-more-item h4) {
-          font-size: 13.5px;
+          font-size: 14.5px;
           line-height: 1.5;
           font-weight: 700;
           color: var(--ink);
@@ -250,7 +250,7 @@ export default function ArticlePageClient({
         }
 
         .article-header h1 {
-          font-size: 34px;
+          font-size: 36px;
           line-height: 1.55;
           font-weight: 700;
           margin: 10px 0 14px;
@@ -532,7 +532,7 @@ export default function ArticlePageClient({
           aspect-ratio: 16/11;
         }
         :global(.related-section .card h3) {
-          font-size: 15px;
+          font-size: 16px;
           line-height: 1.5;
         }
         :global(.related-section .card p) {
@@ -561,7 +561,7 @@ export default function ArticlePageClient({
         }
         @media (max-width: 600px) {
           .article-header h1 {
-            font-size: 24px;
+            font-size: 26px;
           }
         }
         @media (max-width: 480px) {
@@ -570,7 +570,7 @@ export default function ArticlePageClient({
             gap: 10px;
           }
           :global(.related-section .card h3) {
-            font-size: 13.5px;
+            font-size: 14.5px;
           }
         }
       `}</style>
