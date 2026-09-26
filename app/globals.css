@@ -228,7 +228,7 @@ main.wrap > .ad-slot,
 .card h3 {
   font-weight: 700;
   font-size: 18px;
-line-height: 1.6;
+  line-height: 1.6;
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
