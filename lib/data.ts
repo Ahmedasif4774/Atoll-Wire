@@ -237,21 +237,22 @@ export async function searchArticles(lang: Lang, query: string, limit = 6): Prom
     .slice(0, limit);
 }
 
-// The whole site pretends "today" is a fixed date for demo purposes (see
-// DECORATIVE_DATE in components/*/Header.tsx) — a fundraising countdown is
-// computed against that SAME fixed date, not the visitor's real clock, so
-// it doesn't silently drift as real time passes on a demo deployment. Swap
-// this for `new Date()` once real dates are wired up site-wide.
-const SITE_TODAY = new Date("2026-09-07T00:00:00Z");
-
 // Whole days remaining until an appeal's deadline. Several appeals can have
 // overlapping/concurrent deadlines with no special handling needed — each
 // article just computes and shows its own countdown independently. Can come
 // back 0 or negative once a deadline has passed.
+//
+// This used to be computed against a fixed "pretend today" date left over
+// from an early demo build (2026-09-07, hardcoded) instead of the real
+// clock — harmless while that date was in the future, but once real time
+// caught up and passed it, every appeal's countdown was silently frozen
+// and increasingly wrong (showing MORE days left than actually remained,
+// including for appeals whose real deadline had already passed). Fixed to
+// use the real current time.
 export function getDaysLeft(deadlineDate: string): number {
   const deadline = new Date(`${deadlineDate}T00:00:00Z`);
   const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.round((deadline.getTime() - SITE_TODAY.getTime()) / msPerDay);
+  return Math.round((deadline.getTime() - Date.now()) / msPerDay);
 }
 
 // Localized "N days left" badge text for a countdown. Kept here (rather
