@@ -35,7 +35,16 @@ export interface ImageRef {
 
 export type ArticleBodyBlock =
   | { type: "paragraph"; text: string }
-  | { type: "ad"; imageUrl: string; alt: string };
+  | { type: "ad"; imageUrl: string; alt: string }
+  // An editor-inserted photo within the article body (distinct from the
+  // required top-of-article heroImage) — alt text and caption are both
+  // optional since an editor may not fill them in for every photo.
+  | { type: "photo"; imageUrl: string; alt?: string; caption?: string }
+  // A YouTube/Vimeo link an editor pasted into the body. `embedUrl` is the
+  // already-converted iframe-embeddable URL (see lib/videoEmbed.ts) — null
+  // when the pasted link couldn't be recognized, so the template can skip
+  // rendering a broken iframe instead of showing one.
+  | { type: "video"; embedUrl: string | null; caption?: string };
 
 export interface DonationBankDetail {
   label: string;
