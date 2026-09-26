@@ -275,7 +275,7 @@ export default function HomePageClient({
         }
         :global(.hero-lead .overlay h1) {
           color: #fff;
-          font-size: 30px;
+          font-size: 32px;
           line-height: 1.5;
           margin-bottom: 10px;
         }
@@ -334,7 +334,7 @@ export default function HomePageClient({
         }
         :global(.editor-pair-card .ep-text h4) {
           font-weight: 800;
-          font-size: 17px;
+          font-size: 18px;
           line-height: 1.5;
           margin-bottom: 0;
           color: #fff;
@@ -435,7 +435,7 @@ export default function HomePageClient({
           padding: 120px 12px 14px;
         }
         :global(.latest-grid .card h3) {
-          font-size: 17px;
+          font-size: 18px;
           font-weight: 800;
           line-height: 1.5;
           color: #fff;
