@@ -33,13 +33,18 @@ export interface ImageRef {
   alt: string;
 }
 
+// How wide an in-body photo displays. "large" (the original, only size
+// before this field existed) fills the article's text column, matching
+// every photo block saved before the size picker was added.
+export type PhotoSize = "small" | "medium" | "large" | "full";
+
 export type ArticleBodyBlock =
-  | { type: "paragraph"; text: string }
+  | { type: "paragrap
   | { type: "ad"; imageUrl: string; alt: string }
   // An editor-inserted photo within the article body (distinct from the
   // required top-of-article heroImage) — alt text and caption are both
   // optional since an editor may not fill them in for every photo.
-  | { type: "photo"; imageUrl: string; alt?: string; caption?: string }
+    | { type: "photo"; imageUrl: string; alt?: string; caption?: string; size?: PhotoSize }
   // A YouTube/Vimeo link an editor pasted into the body. `embedUrl` is the
   // already-converted iframe-embeddable URL (see lib/videoEmbed.ts) — null
   // when the pasted link couldn't be recognized, so the template can skip
