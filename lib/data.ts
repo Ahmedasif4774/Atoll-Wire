@@ -17,6 +17,7 @@
 
 import { sanityClient } from "./sanity/client";
 import * as queries from "./sanity/queries";
+import { toVideoEmbedUrl } from "./videoEmbed";
 import raw from "@/data/content.json";
 import type {
   AppealFields,
@@ -77,18 +78,35 @@ interface PortableSpan {
 interface PortableBlock {
   _type?: string;
   children?: PortableSpan[];
+  // Present on an "image" block once lib/sanity/queries.ts's projection has
+  // resolved its asset reference to a URL.
+  imageUrl?: string;
+  alt?: string;
+  caption?: string;
+  // Present on a "videoEmbed" block — the raw URL an editor pasted in.
+  url?: string;
 }
 
-// Portable text -> the simple { type: "paragraph", text }[] shape the
-// article templates render. Images embedded in the body are skipped for
-// now (the templates only render paragraph blocks) rather than crashing.
+// Portable text -> the simple, flat shape the article templates render:
+// paragraphs, photos, and videos, in the order an editor placed them.
+// Anything else (an unrecognized block type, or an image block with no
+// resolved imageUrl — e.g. a since-deleted Sanity asset) is skipped rather
+// than crashing the page.
 function blocksToBody(blocks: PortableBlock[] | undefined): ArticleBodyBlock[] {
   return (blocks ?? [])
-    .filter((b) => b?._type === "block")
-    .map((b) => ({
-      type: "paragraph" as const,
-      text: (b.children ?? []).map((c) => c.text ?? "").join(""),
-    }));
+    .map((b): ArticleBodyBlock | null => {
+      if (b?._type === "block") {
+        return { type: "paragraph", text: (b.children ?? []).map((c) => c.text ?? "").join("") };
+      }
+      if (b?._type === "image") {
+        return b.imageUrl ? { type: "photo", imageUrl: b.imageUrl, alt: b.alt, caption: b.caption } : null;
+      }
+      if (b?._type === "videoEmbed") {
+        return { type: "video", embedUrl: toVideoEmbedUrl(b.url), caption: b.caption };
+      }
+      return null;
+    })
+    .filter((b): b is ArticleBodyBlock => b !== null);
 }
 
 interface RawAppeal {
