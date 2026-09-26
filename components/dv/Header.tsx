@@ -215,7 +215,7 @@ export default function Header({ enHref }: { enHref: string }) {
         }
         :global(.search-result-title) {
           font-family: "MV Waheed", "Noto Sans Thaana", sans-serif;
-          font-size: 13.5px;
+          font-size: 14.5px;
           font-weight: 600;
           line-height: 1.6;
           color: var(--ink);
