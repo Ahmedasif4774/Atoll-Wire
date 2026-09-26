@@ -43,7 +43,8 @@ const articleProjection = /* groq */ `{
   "body": select($lang == "dv" => bodyDv, bodyEn)[]{
     ...,
     _type == "image" => {
-      "imageUrl": asset->url
+      "imageUrl": asset->url,
+      size
     }
   },
   "tags": select($lang == "dv" => tagsDv, tagsEn),
