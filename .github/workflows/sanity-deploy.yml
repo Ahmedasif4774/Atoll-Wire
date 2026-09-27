@@ -1,0 +1,59 @@
+name: Deploy Sanity Studio
+
+# Studio deployment (the static editor UI at atollwire.sanity.studio) is
+# separate from the Next.js/Vercel site deploy — pushing schema changes to
+# GitHub does NOT update Studio on its own. This workflow closes that gap:
+# whenever the schema (or anything else Studio needs) changes on main, it
+# rebuilds and redeploys Studio automatically, so a schema field you just
+# added (like the photo "size" picker, or the video block type) shows up
+# in the editor without anyone having to run `npx sanity deploy` by hand.
+#
+# Requires a repo secret named SANITY_AUTH_TOKEN — a token with deploy
+# permission for this Sanity project. See the "Deploying Sanity Studio"
+# note in the project README (or ask in chat) for how to create one.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/sanity/**"
+      - "sanity.config.ts"
+      - "sanity.cli.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/sanity-deploy.yml"
+  # Lets you trigger a redeploy on demand from the Actions tab, e.g. after
+  # rotating the token or if a push-triggered run failed for an unrelated
+  # reason.
+  workflow_dispatch: {}
+
+jobs:
+  deploy-studio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Sanity Studio
+        env:
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+          # Not secret — this is the same project ID/dataset name already
+          # visible in the deployed site's own JS bundle (sanity.cli.ts
+          # reads these from the environment, same as the Next.js app).
+          NEXT_PUBLIC_SANITY_PROJECT_ID: tinn4qy2
+          NEXT_PUBLIC_SANITY_DATASET: production
+        # `sanity deploy` only prompts interactively the very first time a
+        # project picks its studio hostname; this project already has one
+        # (atollwire.sanity.studio), so a normal run shouldn't prompt at
+        # all. Piping "y" in is just a safety net in case some other
+        # confirmation shows up in a non-interactive shell — it's ignored
+        # if nothing asks for it.
+        run: yes | npx sanity deploy
