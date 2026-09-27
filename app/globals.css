@@ -59,6 +59,12 @@ body {
   color: var(--ink);
   transition: background-color 0.2s ease, color 0.2s ease;
   -webkit-font-smoothing: antialiased;
+  /* Full-width in-article photos (see .article-photo--full in
+     ArticlePageClient) intentionally bleed to 100vw, which can overshoot
+     the visible viewport by the scrollbar's own width on desktop browsers.
+     Clipping horizontal overflow here (vertical scrolling is unaffected)
+     keeps that from ever introducing a horizontal scrollbar. */
+  overflow-x: hidden;
 }
 
 a {
