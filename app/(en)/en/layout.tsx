@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 import "../../globals.css";
 import VisitorBadge from "@/components/dv/VisitorBadge";
+import { LOGO_MARK_DATA_URI } from "@/lib/brandLogo";
 
 export const metadata: Metadata = {
   title: "Atoll Wire — News",
+  icons: {
+    icon: LOGO_MARK_DATA_URI,
+    shortcut: LOGO_MARK_DATA_URI,
+    apple: LOGO_MARK_DATA_URI,
+  },
 };
 
 // English counterpart of app/(dv)/layout.tsx — its own root layout with
