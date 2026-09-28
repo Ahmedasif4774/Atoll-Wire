@@ -158,11 +158,6 @@ export default function Header({ enHref }: { enHref: string }) {
           display: block;
           flex-shrink: 0;
           box-shadow: 0 3px 10px rgba(14, 42, 46, 0.22);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        :global(.logo:hover .logo-mark) {
-          transform: scale(1.06) rotate(2deg);
-          box-shadow: 0 5px 16px rgba(14, 42, 46, 0.3);
         }
         :global(.logo span) {
           color: var(--coral);
