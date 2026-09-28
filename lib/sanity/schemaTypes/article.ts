@@ -1,4 +1,5 @@
 import { defineField, defineType, defineArrayMember } from "sanity";
+import { PlayIcon } from "@sanity/icons";
 
 // Shared between bodyDv and bodyEn below (an editor building the Dhivehi
 // and English versions of the same story gets the identical photo/video
@@ -41,6 +42,12 @@ const bodyVideoMember = defineArrayMember({
   type: "object",
   name: "videoEmbed",
   title: "Video",
+  // Without an explicit icon, Sanity Studio's Portable Text toolbar doesn't
+  // reliably render a quick-insert button for a custom (non-built-in) array
+  // member object — the Photo button shows fine because "image" is a
+  // built-in type with its own default icon, but this anonymous "videoEmbed"
+  // object needs one spelled out or its toolbar button silently disappears.
+  icon: PlayIcon,
   fields: [
     defineField({
       name: "url",
