@@ -71,7 +71,7 @@ export default function ArticlePageClient({
                     // iframe (see lib/videoEmbed.ts).
                     if (!block.embedUrl) return null;
                     return (
-                      <figure className="article-video" key={i}>
+                      <figure className={`article-video article-video--${block.size ?? "large"}`} key={i}>
                         <div className="article-video-frame">
                           <iframe
                             src={block.embedUrl}
@@ -433,6 +433,33 @@ export default function ArticlePageClient({
           width: 100%;
           height: 100%;
           border: 0;
+        }
+        /* Size picker (Studio field: bodyEn/bodyDv video block "size") —
+           same four choices as a photo's, and the same no-op for "large".
+           The width constraint goes on the outer figure; article-video-frame
+           keeps its own 16:9 padding-top trick, so it just shrinks along
+           with the figure instead of needing its own size-specific rules. */
+        .article-video--small {
+          max-width: 320px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .article-video--medium {
+          max-width: 560px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .article-video--full {
+          width: 100vw;
+          max-width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+        }
+        .article-video--full .article-video-frame {
+          border-radius: 0;
         }
         .article-video figcaption {
           font-size: 12.5px;
