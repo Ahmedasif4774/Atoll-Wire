@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/components/dv/ThemeToggle";
 import { getLiveDates } from "@/lib/liveDate";
 import type { Article } from "@/lib/types";
+import { LOGO_MARK_DATA_URI } from "@/lib/brandLogo";
 
 export default function Header({ dvHref }: { dvHref: string }) {
   const [query, setQuery] = useState("");
@@ -73,6 +74,8 @@ export default function Header({ dvHref }: { dvHref: string }) {
     <header className="site-header">
       <div className="wrap">
         <Link href="/en" className="logo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_MARK_DATA_URI} alt="AtollWire" className="logo-mark" />
           Atoll<span style={{ color: "var(--coral)" }}>Wire</span>
         </Link>
         <div className="header-utils">
@@ -138,11 +141,27 @@ export default function Header({ dvHref }: { dvHref: string }) {
           padding: 18px 24px 14px;
         }
         :global(.logo) {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           font-family: "Archivo", sans-serif;
           font-weight: 900;
           font-size: 30px;
           letter-spacing: -0.02em;
           direction: ltr;
+        }
+        :global(.logo-mark) {
+          width: 42px;
+          height: 42px;
+          border-radius: 11px;
+          display: block;
+          flex-shrink: 0;
+          box-shadow: 0 3px 10px rgba(14, 42, 46, 0.22);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        :global(.logo:hover .logo-mark) {
+          transform: scale(1.06) rotate(-2deg);
+          box-shadow: 0 5px 16px rgba(14, 42, 46, 0.3);
         }
         :global(.logo span) {
           color: var(--coral);
