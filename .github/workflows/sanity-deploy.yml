@@ -50,11 +50,10 @@ jobs:
           # reads these from the environment, same as the Next.js app).
           NEXT_PUBLIC_SANITY_PROJECT_ID: tinn4qy2
           NEXT_PUBLIC_SANITY_DATASET: production
-        # `sanity deploy` normally prompts interactively to pick a studio
-        # hostname the first time a project deploys, and there's no TTY in
-        # a GitHub Actions runner to answer that prompt — piping "yes" into
-        # it does NOT work here, because the prompt is an arrow-key
-        # selection menu, not a yes/no question; "yes" just spins the CLI
-        # until it runs out of memory and crashes. Passing --url explicitly
-        # skips the prompt entirely, and --yes accepts any other default.
-        run: npx sanity deploy --url atollwire --yes
+        # `sanity deploy` prompts interactively to pick a studio hostname
+        # unless one is pinned in sanity.cli.ts (see the `studioHost` note
+        # there) — there's no TTY in a GitHub Actions runner to answer that
+        # prompt, so without it the CLI just prints the question and exits
+        # "successfully" in a couple of seconds without deploying anything.
+        # --yes covers any other yes/no confirmation the CLI might still ask.
+        run: npx sanity deploy --yes
