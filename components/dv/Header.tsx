@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import { getLiveDates } from "@/lib/liveDate";
 import type { Article } from "@/lib/types";
+import { LOGO_MARK_DATA_URI } from "@/lib/brandLogo";
 
 export default function Header({ enHref }: { enHref: string }) {
   const [query, setQuery] = useState("");
@@ -83,6 +84,8 @@ export default function Header({ enHref }: { enHref: string }) {
             letterSpacing: 0,
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_MARK_DATA_URI} alt="އެޓޯލް ވަޔަރ" className="logo-mark" />
           އެޓޯލް<span style={{ color: "var(--coral)" }}> ވަޔަރ</span>
         </Link>
         <div className="header-utils">
@@ -142,6 +145,24 @@ export default function Header({ enHref }: { enHref: string }) {
           align-items: center;
           justify-content: space-between;
           padding: 18px 24px 14px;
+        }
+        :global(.logo) {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        :global(.logo-mark) {
+          width: 42px;
+          height: 42px;
+          border-radius: 11px;
+          display: block;
+          flex-shrink: 0;
+          box-shadow: 0 3px 10px rgba(14, 42, 46, 0.22);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        :global(.logo:hover .logo-mark) {
+          transform: scale(1.06) rotate(2deg);
+          box-shadow: 0 5px 16px rgba(14, 42, 46, 0.3);
         }
         :global(.logo span) {
           color: var(--coral);
