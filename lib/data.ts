@@ -84,9 +84,9 @@ interface PortableBlock {
   imageUrl?: string;
   alt?: string;
   caption?: string;
-  // Present on an "image" block — how wide it should render. Older photo
-  // blocks saved before this field existed simply won't have it, which is
-  // why blocksToBody() below falls back to "large" (the original behavior).
+  // Present on an "image" OR "videoEmbed" block — how wide it should
+  // render. Blocks saved before this field existed simply won't have it,
+  // which is why blocksToBody() below falls back to "large" for both.
   size?: PhotoSize;
   // Present on a "videoEmbed" block — the raw URL an editor pasted in.
   url?: string;
@@ -109,7 +109,7 @@ function blocksToBody(blocks: PortableBlock[] | undefined): ArticleBodyBlock[] {
           : null;
       }
       if (b?._type === "videoEmbed") {
-        return { type: "video", embedUrl: toVideoEmbedUrl(b.url), caption: b.caption };
+        return { type: "video", embedUrl: toVideoEmbedUrl(b.url), caption: b.caption, size: b.size ?? "large" };
       }
       return null;
     })
