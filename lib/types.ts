@@ -33,9 +33,9 @@ export interface ImageRef {
   alt: string;
 }
 
-// How wide an in-body photo displays. "large" (the original, only size
-// before this field existed) fills the article's text column, matching
-// every photo block saved before the size picker was added.
+// How wide an in-body photo OR video displays. "large" (the original, only
+// size photos had before this field existed) fills the article's text
+// column, matching every photo block saved before the size picker was added.
 export type PhotoSize = "small" | "medium" | "large" | "full";
 
 export type ArticleBodyBlock =
@@ -48,8 +48,9 @@ export type ArticleBodyBlock =
   // A YouTube/Vimeo link an editor pasted into the body. `embedUrl` is the
   // already-converted iframe-embeddable URL (see lib/videoEmbed.ts) — null
   // when the pasted link couldn't be recognized, so the template can skip
-  // rendering a broken iframe instead of showing one.
-  | { type: "video"; embedUrl: string | null; caption?: string };
+  // rendering a broken iframe instead of showing one. `size` works exactly
+  // like a photo's — same four choices, same fallback to "large".
+  | { type: "video"; embedUrl: string | null; caption?: string; size?: PhotoSize };
 
 export interface DonationBankDetail {
   label: string;
