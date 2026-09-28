@@ -167,6 +167,45 @@ export default defineType({
       validation: (Rule) => Rule.required(),
     }),
 
+    // ---- Social auto-posting ----
+    // When an article's status is set to Approved, a Sanity webhook fires
+    // and a serverless function (app/api/webhooks/sanity-publish/route.ts)
+    // posts it to the AtollWire Facebook Page automatically — UNLESS this
+    // box is ticked. Defaults to false (unticked) so auto-posting is the
+    // default behavior and an editor only has to act to opt an article OUT
+    // (e.g. a sensitive story, an embargoed appeal, a correction/update
+    // that shouldn't re-announce itself).
+    defineField({
+      name: "skipSocialShare",
+      title: "Don't share to social media",
+      description:
+        "Tick this to stop AtollWire from automatically posting this article to Facebook when it's approved. Leave unticked (the default) to auto-post as normal.",
+      type: "boolean",
+      initialValue: false,
+      group: "meta",
+    }),
+    // Set automatically by the webhook handler right after a successful
+    // post — never edited by hand. Shown (read-only) rather than hidden so
+    // an editor can see at a glance whether/when an article actually went
+    // out, which is the fastest way to notice a failed post without
+    // digging through logs.
+    defineField({
+      name: "socialPostedAt",
+      title: "Posted to Facebook at",
+      description: "Set automatically once this article has been auto-posted. Empty means it hasn't been posted yet (or posting failed).",
+      type: "datetime",
+      group: "meta",
+      readOnly: true,
+    }),
+    defineField({
+      name: "socialPostId",
+      title: "Facebook post ID",
+      description: "Set automatically alongside socialPostedAt — useful for finding/debugging the live post.",
+      type: "string",
+      group: "meta",
+      readOnly: true,
+    }),
+
     // ---- Dhivehi ----
     defineField({ name: "titleDv", title: "Title", type: "string", group: "dv", validation: (Rule) => Rule.required() }),
     defineField({ name: "dekDv", title: "Dek (standfirst)", type: "text", rows: 2, group: "dv" }),
