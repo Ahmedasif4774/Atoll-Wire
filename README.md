@@ -132,6 +132,75 @@ See `lib/types.ts` for the exact TypeScript shape every page works with,
 and the roadmap doc (`atollwire-backend-roadmap.md`, wherever you kept it)
 for the original Phase 0 field-by-field discussion this schema implements.
 
+## Facebook auto-posting
+
+When an editor sets an article's Status to **Approved** in Sanity Studio, it
+gets posted to the AtollWire Facebook Page automatically — unless that
+article has **"Don't share to social media"** ticked (Meta tab, defaults to
+unticked). The plumbing: a Sanity webhook fires on every article
+create/update → `app/api/webhooks/sanity-publish/route.ts` checks the
+status/checkbox/already-posted gates → posts a plain link (title + dek) to
+the Page via the Graph API → writes `socialPostedAt`/`socialPostId` back
+onto the article so it's never posted twice.
+
+None of this does anything until the one-time setup below is done.
+
+**1. Create a Facebook Page access token** (skip if you already have a Page
+and a Meta developer app):
+
+1. Make sure you have a Facebook **Page** for AtollWire (not a personal
+   profile — the Graph API only posts to Pages).
+2. Create a Meta app at https://developers.facebook.com/apps (type:
+   "Business"), and add the Page as an asset the app can access.
+3. In [Graph API Explorer](https://developers.facebook.com/tools/explorer),
+   select your app, generate a **User** token with the `pages_show_list` and
+   `pages_manage_posts` permissions, then call
+   `GET /me/accounts` — this returns your Page's `id` and a **Page access
+   token** in the same response.
+4. That Page token from step 3 is already long-lived in practice for
+   Business-verified apps; if Meta later requires it, exchange it for a
+   long-lived one via `GET /oauth/access_token?grant_type=fb_exchange_token&...`
+   (see Meta's docs — this only differs if you hit token-expiry issues).
+5. Getting the app fully reviewed by Meta (required before it can post
+   without you personally being logged in as a developer/tester on the app)
+   typically takes 2-4 weeks — until then the token only works for
+   admins/testers added to the app.
+
+**2. Set environment variables in Vercel** (Project Settings → Environment
+Variables): `FB_PAGE_ID`, `FB_PAGE_ACCESS_TOKEN`, and `SANITY_WEBHOOK_SECRET`
+(any long random string — generate one with e.g. `openssl rand -hex 24`).
+Also confirm `SANITY_API_TOKEN` is set to a token with **Editor** access, not
+just Viewer — the webhook needs to write `socialPostedAt` back to the
+article after posting.
+
+**3. Create the webhook in Sanity** at manage.sanity.io → your project → API
+→ Webhooks → Create webhook:
+
+- **URL**: `https://<your-deployed-domain>/api/webhooks/sanity-publish`
+- **Dataset**: `production`
+- **Trigger on**: Create, Update
+- **Filter**: `_type == "article"`
+- **Projection**:
+  ```
+  {
+    "_id": _id,
+    "_type": _type,
+    "status": status,
+    "skipSocialShare": skipSocialShare,
+    "socialPostedAt": socialPostedAt,
+    "titleDv": titleDv,
+    "dekDv": dekDv,
+    "slug": slug.current
+  }
+  ```
+- **Secret**: the same value you put in `SANITY_WEBHOOK_SECRET`
+- **HTTP method**: POST, **API version**: latest
+
+Once all three are done, approving an article (with the checkbox left
+unticked) should post it to the Page within a few seconds. Check the
+article's "Posted to Facebook at" field in Studio, or the Vercel function
+logs for `[sanity-publish webhook]` lines, if a post doesn't show up.
+
 ## What's NOT done yet (Phase 5, optional/incremental per the roadmap)
 
 - Contact form backend (it's currently a demo that doesn't send anywhere,
