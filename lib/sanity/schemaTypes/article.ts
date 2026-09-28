@@ -1,6 +1,25 @@
 import { defineField, defineType, defineArrayMember } from "sanity";
 import { PlayIcon } from "@sanity/icons";
 
+// Shared by the photo AND video size fields below (see the "size" field on
+// each), so the same four choices can never drift out of sync between them.
+const SIZE_FIELD = defineField({
+  name: "size",
+  title: "Size",
+  description: "How wide this displays in the article body. Defaults to Large (the original full-column behavior) if left unset.",
+  type: "string",
+  options: {
+    list: [
+      { title: "Small", value: "small" },
+      { title: "Medium", value: "medium" },
+      { title: "Large", value: "large" },
+      { title: "Full-width", value: "full" },
+    ],
+    layout: "radio",
+  },
+  initialValue: "large",
+});
+
 // Shared between bodyDv and bodyEn below (an editor building the Dhivehi
 // and English versions of the same story gets the identical photo/video
 // block everywhere) rather than defined twice and risking the two drifting.
@@ -16,22 +35,7 @@ const bodyImageMember = defineArrayMember({
   fields: [
     defineField({ name: "alt", title: "Alt text", description: "Describes the photo for screen readers/SEO.", type: "string" }),
     defineField({ name: "caption", title: "Caption", type: "string" }),
-    defineField({
-      name: "size",
-      title: "Size",
-      description: "How wide this photo displays in the article body. Defaults to Large (the original full-column behavior) if left unset.",
-      type: "string",
-      options: {
-          list: [
-              { title: "Small", value: "small" },
-            { title: "Medium", value: "medium" },
-            { title: "Large", value: "large" },
-            { title: "Full-width", value: "full" },
-        ],
-        layout: "radio",
-    },
-      initialValue: "large",
-      }),
+    SIZE_FIELD,
   ],
 });
 
@@ -57,6 +61,7 @@ const bodyVideoMember = defineArrayMember({
       validation: (Rule) => Rule.required().uri({ scheme: ["http", "https"] }),
     }),
     defineField({ name: "caption", title: "Caption", type: "string" }),
+    SIZE_FIELD,
   ],
   preview: {
     select: { title: "url", subtitle: "caption" },
