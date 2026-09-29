@@ -122,12 +122,7 @@ export default function VisitorBadge() {
         .visitor-badge strong {
           font-weight: 700;
         }
-        @media (max-width: 600px) {
-          .visitor-badge {
-            display: none;
-          }
-        }
-      `}</style>
+              `}</style>
     </div>
   );
 }
