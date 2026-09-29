@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "../../globals.css";
 import VisitorBadge from "@/components/dv/VisitorBadge";
+import PrayerNotification from "@/components/shared/PrayerNotification";
 import { LOGO_MARK_DATA_URI } from "@/lib/brandLogo";
 
 export const metadata: Metadata = {
@@ -19,9 +20,10 @@ export const metadata: Metadata = {
 export default function EnRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr">
-      <body style={{ fontFamily: "'Archivo', sans-serif" }}>
+            <body style={{ fontFamily: "'Archivo', sans-serif" }}>
         {children}
         <VisitorBadge />
+        <PrayerNotification locale="en" />
       </body>
     </html>
   );
