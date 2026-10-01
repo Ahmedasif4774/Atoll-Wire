@@ -121,5 +121,5 @@ export const relatedArticlesQuery = /* groq */ `
 // Slicing in JS after the fetch (same pattern already used by
 // recentArticlesQuery/relatedArticlesQuery above) sidesteps that entirely.
 export const liveSettingsQuery = /* groq */ `
-  *[_type == "liveSettings"] { youtubeLiveUrl, facebookLiveUrl }
+  *[_type == "liveSettings"] { youtubeLiveUrl, facebookLiveUrl, topXPostUrl }
 `;
