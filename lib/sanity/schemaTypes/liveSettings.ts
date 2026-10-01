@@ -43,6 +43,15 @@ export default defineType({
       validation: (Rule) =>
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
     }),
+        defineField({
+      name: "topXPostUrl",
+      title: "Today's top X (Twitter) post URL",
+      description:
+        "Paste the URL of the best/most relevant X (formerly Twitter) post of the day here, and Publish. It replaces the placeholder X card in the homepage's \"Trending on Social Media\" sidebar with a live embed of that actual post. Leave empty to show the placeholder card instead.",
+      type: "url",
+      validation: (Rule) =>
+        Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
+    }),
   ],
   preview: {
     prepare() {
