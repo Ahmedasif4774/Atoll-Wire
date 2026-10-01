@@ -9,6 +9,8 @@ import LiveBanner from "@/components/shared/LiveBanner";
 import { formatDaysLeftLabel, getCategory, getDaysLeft } from "@/lib/data";
 import { homeConfigEn as cfg } from "@/lib/homeConfig.en";
 import type { Article, CategorySlug } from "@/lib/types";
+import XPostEmbed from "@/components/shared/XPostEmbed";
+import { useSocialTrending } from "@/lib/useSocialTrending";
 
 // All the actual markup/styling for the English homepage lives here, in a
 // Client Component, because it uses <style jsx> — which (as of Next 14)
@@ -38,7 +40,8 @@ export default function HomePageClient({
   worldArticles: Article[];
 }) {
   const heroCategory = getCategory(hero.category);
-
+  const { facebook: topFbPost, xUrl } = useSocialTrending();
+  
   return (
     <>
       <Header dvHref="/" />
@@ -188,7 +191,22 @@ export default function HomePageClient({
 
             <aside className="social-trending">
               <h3>{cfg.socialTrending.heading}</h3>
-              {cfg.socialTrending.cards.map((card) => (
+                         {cfg.socialTrending.cards.map((card) => {
+              const isFacebook = card.platformIcon === "f";
+              const isX = card.platformIcon === "𝕏";
+              const live = isFacebook ? topFbPost : null;
+              const body = live?.body ?? card.body;
+              const stats = live?.stats ?? card.stats;
+
+              if (isX && xUrl) {
+                return (
+                  <div className="social-card social-card-x-embed" key={card.handle}>
+                    <XPostEmbed url={xUrl} />
+                  </div>
+                );
+              }
+
+              return (
                 <div className="social-card" key={card.handle}>
                   <div className="social-card-head">
                     <div className="social-platform-icon" style={{ background: card.platformBg }}>
@@ -196,16 +214,27 @@ export default function HomePageClient({
                     </div>
                     <div className="s-handle">{card.handle}</div>
                   </div>
-                  {card.tiktok && <div className="social-tiktok-thumb">▶️</div>}
-                  <div className="social-card-body">{card.body}</div>
+                  {card.tiktok && <div className="social-tiktok-thumb">▶</div>}
+                  {live?.permalink ? (
+                    
+                      className="social-card-body"
+                      href={live.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {body}
+                    </a>
+                  ) : (
+                    <div className="social-card-body">{body}</div>
+                  )}
                   <div className="social-card-stats" style={card.tiktok ? { clear: "both" } : undefined}>
-                    {card.stats.map((s) => (
+                    {stats.map((s) => (
                       <span key={s}>{s}</span>
                     ))}
                   </div>
                 </div>
-              ))}
-            </aside>
+              );
+            })}
 
             <div className="ad-slot ad-sidebar" style={{ aspectRatio: "300/450", marginTop: 65 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -514,10 +543,23 @@ export default function HomePageClient({
           color: #0e2a47;
         }
         :global(.social-card-body) {
-          font-size: 13px;
-          line-height: 1.6;
-          margin-bottom: 8px;
-          color: #0e2a47;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  color: #0e2a47;
+  display: block;
+  text-decoration: none;
+}
+:global(a.social-card-body:hover) {
+  text-decoration: underline;
+}
+:global(.social-card-x-embed) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+  border-radius: 10px;
+}
         }
         :global(.social-card-stats) {
           display: flex;
