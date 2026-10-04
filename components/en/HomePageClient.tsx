@@ -235,7 +235,7 @@ export default function HomePageClient({
                 </div>
               );
             })}
-
+</aside>
             <div className="ad-slot ad-sidebar" style={{ aspectRatio: "300/450", marginTop: 65 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={cfg.sidebarAdBottom} alt="Sale advertisement" />
