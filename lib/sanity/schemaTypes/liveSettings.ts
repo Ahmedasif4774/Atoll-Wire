@@ -52,6 +52,16 @@ export default defineType({
       validation: (Rule) =>
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
     }),
+
+          defineField({
+      name: "topTikTokPostUrl",
+      title: "Today's top TikTok video URL",
+      description:
+        "Paste the URL of the best/most relevant TikTok video of the day here, and Publish. It replaces the placeholder TikTok card in the homepage's \"Trending on Social Media\" sidebar with a live embed of that actual video. Leave empty to show the placeholder card instead.",
+      type: "url",
+      validation: (Rule) =>
+        Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
+    }),
   ],
   preview: {
     prepare() {
