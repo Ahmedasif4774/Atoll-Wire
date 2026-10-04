@@ -70,7 +70,7 @@ async function getTopFacebookPost(): Promise<TopFacebookPost | null> {
 
   try {
     const res = await fetch(url, { next: { revalidate } });
-    if (!res.ok) throw new Error(`Graph API responded ${res.status}`);
+       if (!res.ok) throw new Error(`Graph API responded ${res.status}: ${await res.text()}`);
     const body = await res.json();
     const posts: FacebookPost[] = body?.data ?? [];
     if (!posts.length) throw new Error("No posts returned");
