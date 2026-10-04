@@ -193,7 +193,7 @@ export default function HomePageClient({
               <h3>{cfg.socialTrending.heading}</h3>
                          {cfg.socialTrending.cards.map((card) => {
               const isFacebook = card.platformIcon === "f";
-              const isX = card.platformIcon === "%";
+              const isX = card.platformIcon === "X";
               const live = isFacebook ? topFbPost : null;
               const body = live?.body ?? card.body;
               const stats = live?.stats ?? card.stats;
