@@ -11,6 +11,7 @@ import { homeConfigEn as cfg } from "@/lib/homeConfig.en";
 import type { Article, CategorySlug } from "@/lib/types";
 import XPostEmbed from "@/components/shared/XPostEmbed";
 import { useSocialTrending } from "@/lib/useSocialTrending";
+import TikTokEmbed from "@/components/shared/TikTokEmbed";
 
 // All the actual markup/styling for the English homepage lives here, in a
 // Client Component, because it uses <style jsx> — which (as of Next 14)
@@ -40,7 +41,7 @@ export default function HomePageClient({
   worldArticles: Article[];
 }) {
   const heroCategory = getCategory(hero.category);
-  const { facebook: topFbPost, xUrl } = useSocialTrending();
+  const { facebook: topFbPost, xUrl, tiktok } = useSocialTrending();
   
   return (
     <>
@@ -205,7 +206,13 @@ export default function HomePageClient({
                   </div>
                 );
               }
-
+              if (card.tiktok && tiktok?.html) {
+                return (
+                  <div className="social-card social-card-tiktok-embed" key={card.handle}>
+                    <TikTokEmbed html={tiktok.html} />
+                  </div>
+                );
+              }     
               return (
                 <div className="social-card" key={card.handle}>
                   <div className="social-card-head">
@@ -560,7 +567,18 @@ export default function HomePageClient({
   overflow: hidden;
   border-radius: 10px;
 }
-        }
+:global(.social-card-tiktok-embed) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+  border-radius: 10px;
+}
+:global(.social-card-tiktok-embed .tiktok-embed) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
         :global(.social-card-stats) {
           display: flex;
           gap: 14px;
