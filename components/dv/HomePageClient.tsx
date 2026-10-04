@@ -213,7 +213,7 @@ export default function HomePageClient({
                   </div>
                   {card.tiktok && <div className="social-tiktok-thumb">▶</div>}
                   {live?.permalink ? (
-                    
+                   <a 
                       className="social-card-body"
                       href={live.permalink}
                       target="_blank"
