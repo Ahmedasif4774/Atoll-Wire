@@ -193,7 +193,7 @@ export default function HomePageClient({
               <h3>{cfg.socialTrending.heading}</h3>
                          {cfg.socialTrending.cards.map((card) => {
               const isFacebook = card.platformIcon === "f";
-              const isX = card.platformIcon === "𝕏";
+              const isX = card.platformIcon === "%";
               const live = isFacebook ? topFbPost : null;
               const body = live?.body ?? card.body;
               const stats = live?.stats ?? card.stats;
@@ -216,7 +216,7 @@ export default function HomePageClient({
                   </div>
                   {card.tiktok && <div className="social-tiktok-thumb">▶</div>}
                   {live?.permalink ? (
-                    
+                   <a 
                       className="social-card-body"
                       href={live.permalink}
                       target="_blank"
