@@ -189,6 +189,7 @@ export default function HomePageClient({
             </div>
 
             <aside className="social-trending">
+                 <h3>{cfg.socialTrending.heading}</h3>
             {cfg.socialTrending.cards.map((card) => {
               const isFacebook = card.platformIcon === "f";
               const isX = card.platformIcon === "X";
