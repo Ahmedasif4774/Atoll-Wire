@@ -181,11 +181,17 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
     // rather than going empty.
     const pool = todaysPosts.length ? todaysPosts : posts.slice(0, 5);
 
-    // Photo, video and link posts often have no caption, so don't insist on
-    // text — any post with a link can be the card (it shows the picture and
-    // counts, plus the caption when there is one).
-    const scored = pool
-      .filter((p) => !!p.permalink_url)
+    // Facebook's own automatic posts ("… updated their cover photo.") are
+    // not news, so skip them. Photo, video and link posts often have no
+    // caption, so don't insist on text — any other post with a link can be
+    // the card (it shows the picture and counts, plus the caption if any).
+    const isAutomatic = (p: FacebookPost) =>
+      !p.message && /(updated|changed)\s+(their|its|his|her)\s+(cover|profile)\s+(photo|picture)/i.test(p.story ?? "");
+    const usable = (p: FacebookPost) => !!p.permalink_url && !isAutomatic(p);
+    let candidates = pool.filter(usable);
+    if (!candidates.length) candidates = posts.filter(usable).slice(0, 5);
+
+    const scored = candidates
       .map((p) => {
         const likes = p.reactions?.summary?.total_count ?? p.likes?.summary?.total_count ?? 0;
         const comments = p.comments?.summary?.total_count ?? 0;
@@ -211,8 +217,8 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
       permalink: top.post.permalink_url ?? null,
       // Only show the counts Facebook actually allowed us to read.
       stats: [
-        ...(level === 0 ? [`💬 ${formatCount(top.comments)}`] : []),
-        ...(level <= 1 ? [`👍 ${formatCount(top.likes)}`] : []),
+        ...(level === 0 && top.comments > 0 ? [`💬 ${formatCount(top.comments)}`] : []),
+        ...(level <= 1 && top.likes > 0 ? [`👍 ${formatCount(top.likes)}`] : []),
       ],
       image: top.post.full_picture ?? null,
     };
