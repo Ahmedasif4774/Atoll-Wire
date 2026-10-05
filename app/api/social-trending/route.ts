@@ -58,6 +58,7 @@ interface FacebookPost {
   full_picture?: string;
   created_time: string;
   likes?: { summary?: { total_count?: number } };
+  reactions?: { summary?: { total_count?: number } };
   comments?: { summary?: { total_count?: number } };
   shares?: { count?: number };
 }
@@ -145,12 +146,29 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
   }
   const token = await resolvePageToken();
 
-  const fields = "message,permalink_url,full_picture,created_time,likes.summary(true),comments.summary(true),shares";
-  const url = `https://graph.facebook.com/${GRAPH_VERSION}/${PAGE_ID}/posts?fields=${fields}&limit=25&access_token=${encodeURIComponent(token)}`;
+  // Facebook guards the like/comment counts more tightly than the posts
+  // themselves (the comment counts in particular can need an extra
+  // permission, pages_read_user_content), and its error message for that
+  // case is misleading. So try the full set of fields first and, if Facebook
+  // refuses, step down to fewer fields rather than giving up entirely.
+  const fieldSets = [
+    "message,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),comments.limit(0).summary(true),shares",
+    "message,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),shares",
+    "message,permalink_url,full_picture,created_time",
+  ];
 
   try {
-    const res = await fetch(url, { next: { revalidate } });
-       if (!res.ok) throw new Error(`Graph API responded ${res.status}: ${await res.text()}`);
+    let res: Response | null = null;
+    let level = 0;
+    for (; level < fieldSets.length; level++) {
+      const url = `https://graph.facebook.com/${GRAPH_VERSION}/${PAGE_ID}/posts?fields=${fieldSets[level]}&limit=25&access_token=${encodeURIComponent(token)}`;
+      res = await fetch(url, { next: { revalidate } });
+      if (res.ok) break;
+      const text = await res.text();
+      debug.push(`posts attempt ${level + 1} of ${fieldSets.length} failed: ${text.split(token).join("[token]").slice(0, 200)}`);
+      if (level === fieldSets.length - 1) throw new Error(`Graph API responded ${res.status}: ${text}`);
+    }
+    if (!res || !res.ok) throw new Error("Graph API request failed");
     const body = await res.json();
     const posts: FacebookPost[] = body?.data ?? [];
     if (!posts.length) throw new Error("No posts returned");
@@ -165,7 +183,7 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
     const scored = pool
       .filter((p) => !!p.message)
       .map((p) => {
-        const likes = p.likes?.summary?.total_count ?? 0;
+        const likes = p.reactions?.summary?.total_count ?? p.likes?.summary?.total_count ?? 0;
         const comments = p.comments?.summary?.total_count ?? 0;
         const shares = p.shares?.count ?? 0;
         return { post: p, score: likes + comments + shares, likes, comments };
@@ -182,7 +200,11 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
       handle: "Atoll Wire",
       body: preview,
       permalink: top.post.permalink_url ?? null,
-      stats: [`💬 ${formatCount(top.comments)}`, `👍 ${formatCount(top.likes)}`],
+      // Only show the counts Facebook actually allowed us to read.
+      stats: [
+        ...(level === 0 ? [`💬 ${formatCount(top.comments)}`] : []),
+        ...(level <= 1 ? [`👍 ${formatCount(top.likes)}`] : []),
+      ],
       image: top.post.full_picture ?? null,
     };
   } catch (err) {
@@ -366,5 +388,5 @@ export async function GET() {
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
-  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null, facebookDebug: fbDebug }), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
+  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }), ...(fbDebug.length ? { facebookDebug: fbDebug } : {}), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
 }
