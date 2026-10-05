@@ -23,6 +23,12 @@ import { cleanEnv, getPageToken, GRAPH_VERSION } from "@/lib/facebookPageToken";
 // verification, which isn't available on the Edge runtime).
 export const runtime = "nodejs";
 
+// Only articles published recently are auto-posted. Without this, saving or
+// re-publishing ANY old approved article (there can be dozens from before
+// auto-posting was working) would post it to Facebook as if it were news.
+// Override with the SOCIAL_MAX_AGE_HOURS environment variable in Vercel.
+const MAX_AGE_HOURS = Number(process.env.SOCIAL_MAX_AGE_HOURS) > 0 ? Number(process.env.SOCIAL_MAX_AGE_HOURS) : 48;
+
 interface SanityWebhookPayload {
   _id: string;
   _type: string;
@@ -114,6 +120,28 @@ export async function POST(req: Request) {
     // exact projection this endpoint expects.
     console.error("[sanity-publish webhook] payload missing _id/slug/titleDv — check the webhook's GROQ projection:", payload);
     return NextResponse.json({ error: "incomplete payload — check webhook projection" }, { status: 400 });
+  }
+
+  // Recency gate: look up the article's own publish date (the webhook's
+  // payload doesn't carry it) and refuse to post anything older than
+  // MAX_AGE_HOURS. If the date can't be determined, don't post.
+  try {
+    const dates: { publishedAt?: string; _createdAt?: string } | null = await sanityClient.fetch(
+      `*[_id == $id][0]{ publishedAt, _createdAt }`,
+      { id: payload._id },
+      { cache: "no-store" },
+    );
+    const when = dates?.publishedAt ?? dates?._createdAt;
+    const ageMs = when ? Date.now() - new Date(when).getTime() : NaN;
+    if (!Number.isFinite(ageMs)) {
+      return NextResponse.json({ skipped: "could not determine the article's publish date" });
+    }
+    if (ageMs > MAX_AGE_HOURS * 3600 * 1000) {
+      return NextResponse.json({ skipped: `article is older than ${MAX_AGE_HOURS} hours` });
+    }
+  } catch (err) {
+    console.error("[sanity-publish webhook] could not check article date — not posting:", err);
+    return NextResponse.json({ skipped: "could not check article date" });
   }
 
   const pageId = cleanEnv(process.env.FB_PAGE_ID);
@@ -216,6 +244,13 @@ export async function GET() {
     report.articlesApprovedNotYetPosted = await sanityClient.fetch(
       `count(*[_type == "article" && status == "approved" && !(_id in path("drafts.**")) && !defined(socialPostedAt) && skipSocialShare != true])`,
       {},
+      { cache: "no-store" },
+    );
+    const cutoff = new Date(Date.now() - MAX_AGE_HOURS * 3600 * 1000).toISOString();
+    report.autoPostWindowHours = MAX_AGE_HOURS;
+    report.articlesThatWouldPostIfSavedNow = await sanityClient.fetch(
+      `count(*[_type == "article" && status == "approved" && !(_id in path("drafts.**")) && !defined(socialPostedAt) && skipSocialShare != true && coalesce(publishedAt, _createdAt) >= $cutoff])`,
+      { cutoff },
       { cache: "no-store" },
     );
     report.articlesAlreadyPosted = await sanityClient.fetch(
