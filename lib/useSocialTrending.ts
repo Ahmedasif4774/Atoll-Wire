@@ -7,16 +7,25 @@ export interface TopFacebookPost {
   body: string;
   permalink: string | null;
   stats: string[];
+  image?: string | null;
+}
+
+export interface TopXPost {
+  url: string;
+  handle: string;
+  text: string | null;
 }
 
 export interface TopTikTokPost {
   url: string;
-  html: string | null;
+  handle: string;
+  title: string | null;
+  thumbnail: string | null;
 }
 
 export interface SocialTrendingData {
   facebook: TopFacebookPost | null;
-  xUrl: string | null;
+  x: TopXPost | null;
   tiktok: TopTikTokPost | null;
 }
 
@@ -25,20 +34,19 @@ export interface SocialTrendingData {
 // static placeholder content in lib/homeConfig.*.ts:
 //  - facebook: AtollWire's real top Facebook post of the day, fully
 //    automatic (see that route for how it's picked).
-//  - xUrl: the URL an editor pasted into Sanity's liveSettings.topXPostUrl
-//    for today's best X post, or null if none is set — rendered with
-//    components/shared/XPostEmbed.tsx.
-//  - tiktok: the URL an editor pasted into liveSettings.topTikTokPostUrl,
-//    plus the ready-made embed HTML TikTok's oEmbed endpoint returned for
-//    it (null if that fetch failed) — rendered with
-//    components/shared/TikTokEmbed.tsx.
+//  - x: the post an editor pasted into Sanity's liveSettings.topXPostUrl,
+//    with its author and text, or null if none is set — shown as a
+//    compact link card (components/shared/SocialLinkCard.tsx).
+//  - tiktok: the video an editor pasted into liveSettings.topTikTokPostUrl,
+//    with its creator, caption and preview picture, or null if none is
+//    set — shown with the same link card.
 // Returns nulls until (and unless) real data loads — callers should keep
 // showing the placeholder cards in that case, same fallback approach as
 // PrayerWidget's FALLBACK_TIMES.
 export function useSocialTrending(): SocialTrendingData {
   const [data, setData] = useState<SocialTrendingData>({
     facebook: null,
-    xUrl: null,
+    x: null,
     tiktok: null,
   });
 
@@ -51,7 +59,7 @@ export function useSocialTrending(): SocialTrendingData {
         if (!cancelled) {
           setData({
             facebook: body.facebook ?? null,
-            xUrl: body.xUrl ?? null,
+            x: body.x ?? null,
             tiktok: body.tiktok ?? null,
           });
         }
@@ -60,10 +68,10 @@ export function useSocialTrending(): SocialTrendingData {
       }
     }
     load();
-    // The route's Facebook and TikTok sides only recompute every 30 minutes
-    // (see its `revalidate`), and the X URL only changes when an editor
-    // publishes a new one — checking every 15 minutes here picks all of
-    // them up promptly without hammering the endpoint.
+    // The route's Facebook, X and TikTok sides only recompute every 30
+    // minutes (see its `revalidate`), and the pasted links only change
+    // when an editor publishes new ones — checking every 15 minutes here
+    // picks everything up promptly without hammering the endpoint.
     const id = setInterval(load, 15 * 60000);
     return () => {
       cancelled = true;

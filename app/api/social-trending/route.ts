@@ -14,16 +14,23 @@ import { liveSettingsQuery } from "@/lib/sanity/queries";
 //    no way to automatically find "today's top post" without paying. The
 //    free workaround (see lib/sanity/schemaTypes/liveSettings.ts's
 //    topXPostUrl field) is an editor pasting the URL of the day's best X
-//    post into Sanity; this route just passes that URL through for
-//    components/shared/XPostEmbed.tsx to render with X's still-free oEmbed
-//    widget.
+//    post into Sanity. This route looks that post up through X's still-free
+//    oEmbed endpoint (author + text) so the homepage can show it as a
+//    compact link card (components/shared/SocialLinkCard.tsx) that opens
+//    the real post on X when tapped.
 //  - TikTok: same paid-API tradeoff as X — an editor pastes the URL of the
-//    day's best TikTok video into Sanity's topTikTokPostUrl field. Unlike
-//    X, TikTok's free oEmbed endpoint is fetched here server-side so the
-//    ready-made embed HTML (complete with the correct video id) is passed
-//    straight to components/shared/TikTokEmbed.tsx to render.
-const PAGE_ID = process.env.FB_PAGE_ID;
-const PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
+//    day's best TikTok video into Sanity's topTikTokPostUrl field. TikTok's
+//    free oEmbed endpoint is fetched here server-side to get the creator,
+//    caption and a preview picture for the same kind of link card.
+// Values pasted into Vercel often pick up a stray space, line break or pair
+// of quotes — any of which makes Facebook answer "Invalid OAuth access
+// token" — so clean them up before use.
+function cleanEnv(value: string | undefined): string | undefined {
+  const v = value?.trim().replace(/^["']+|["']+$/g, "").trim();
+  return v || undefined;
+}
+const PAGE_ID = cleanEnv(process.env.FB_PAGE_ID);
+const PAGE_ACCESS_TOKEN = cleanEnv(process.env.FB_PAGE_ACCESS_TOKEN);
 
 const GRAPH_VERSION = "v19.0";
 
@@ -49,6 +56,7 @@ function formatCount(n: number): string {
 interface FacebookPost {
   message?: string;
   permalink_url?: string;
+  full_picture?: string;
   created_time: string;
   likes?: { summary?: { total_count?: number } };
   comments?: { summary?: { total_count?: number } };
@@ -60,13 +68,43 @@ interface TopFacebookPost {
   body: string;
   permalink: string | null;
   stats: string[];
+  image: string | null;
 }
 
-async function getTopFacebookPost(): Promise<TopFacebookPost | null> {
-  if (!PAGE_ID || !PAGE_ACCESS_TOKEN) return null;
+// A system-user token (the never-expiring kind made in Business Settings)
+// usually has to be swapped for the Page's own token before the Page's posts
+// can be read. If that swap isn't possible we just use the token as given.
+async function resolvePageToken(): Promise<string> {
+  const fallback = PAGE_ACCESS_TOKEN as string;
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${PAGE_ID}?fields=access_token&access_token=${encodeURIComponent(fallback)}`,
+      { next: { revalidate } }
+    );
+    if (!res.ok) return fallback;
+    const body = await res.json();
+    return typeof body?.access_token === "string" && body.access_token ? body.access_token : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
-  const fields = "message,permalink_url,created_time,likes.summary(true),comments.summary(true),shares";
-  const url = `https://graph.facebook.com/${GRAPH_VERSION}/${PAGE_ID}/posts?fields=${fields}&limit=25&access_token=${encodeURIComponent(PAGE_ACCESS_TOKEN)}`;
+// `errors` collects a short reason when Facebook can't be read, so GET can
+// show it in its response (it never contains the token) — that makes setup
+// problems visible without digging through Vercel's build logs.
+async function getTopFacebookPost(errors: string[]): Promise<TopFacebookPost | null> {
+  if (!PAGE_ID) {
+    errors.push("FB_PAGE_ID is not set");
+    return null;
+  }
+  if (!PAGE_ACCESS_TOKEN) {
+    errors.push("FB_PAGE_ACCESS_TOKEN is not set");
+    return null;
+  }
+  const token = await resolvePageToken();
+
+  const fields = "message,permalink_url,full_picture,created_time,likes.summary(true),comments.summary(true),shares";
+  const url = `https://graph.facebook.com/${GRAPH_VERSION}/${PAGE_ID}/posts?fields=${fields}&limit=25&access_token=${encodeURIComponent(token)}`;
 
   try {
     const res = await fetch(url, { next: { revalidate } });
@@ -103,9 +141,13 @@ async function getTopFacebookPost(): Promise<TopFacebookPost | null> {
       body: preview,
       permalink: top.post.permalink_url ?? null,
       stats: [`💬 ${formatCount(top.comments)}`, `👍 ${formatCount(top.likes)}`],
+      image: top.post.full_picture ?? null,
     };
   } catch (err) {
     console.error("Failed to fetch top Facebook post:", err);
+    errors.push(
+      (err instanceof Error ? err.message : String(err)).split(token).join("[token]").slice(0, 400)
+    );
     return null;
   }
 }
@@ -126,36 +168,139 @@ async function getLiveSettings(): Promise<LiveSettings> {
   }
 }
 
+// Strips tracking junk like "?_r=1&_t=..." from a pasted link, but only for
+// full post links (short share links like vt.tiktok.com/xxxx need to stay
+// exactly as pasted to keep working).
+function cleanPostUrl(url: string, markers: string[]): string {
+  return markers.some((m) => url.includes(m)) ? url.split("?")[0] : url;
+}
+
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&mdash;/g, "—")
+    .replace(/&nbsp;/g, " ");
+}
+
 interface TopTikTokPost {
   url: string;
-  html: string | null;
+  handle: string;
+  title: string | null;
+  thumbnail: string | null;
+}
+
+function tiktokHandleFromUrl(url: string): string {
+  const match = url.match(/tiktok\.com\/(@[^/?#]+)/i);
+  return match ? match[1] : "TikTok";
 }
 
 async function getTopTikTokPost(url: string | undefined): Promise<TopTikTokPost | null> {
   const trimmed = url && url.trim() ? url.trim() : null;
   if (!trimmed) return null;
 
+  const link = cleanPostUrl(trimmed, ["/video/", "/photo/"]);
+  // Even if TikTok's lookup below fails, we still return the link (and the
+  // creator's handle if it's visible in the URL) so the card can show up
+  // and open the video.
+  const fallback: TopTikTokPost = {
+    url: link,
+    handle: tiktokHandleFromUrl(link),
+    title: null,
+    thumbnail: null,
+  };
+
   try {
-    const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(trimmed)}`, {
+    const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`, {
       next: { revalidate },
     });
     if (!res.ok) throw new Error(`TikTok oEmbed responded ${res.status}`);
     const body = await res.json();
-    return { url: trimmed, html: body?.html ?? null };
+    const uniqueId: string | null =
+      typeof body?.author_unique_id === "string" && body.author_unique_id
+        ? `@${body.author_unique_id}`
+        : null;
+    const authorName: string | null =
+      typeof body?.author_name === "string" && body.author_name ? body.author_name : null;
+    const title: string | null =
+      typeof body?.title === "string" && body.title.trim() ? body.title.trim() : null;
+    const thumbnail: string | null =
+      typeof body?.thumbnail_url === "string" && body.thumbnail_url ? body.thumbnail_url : null;
+    return {
+      url: link,
+      handle: uniqueId ?? authorName ?? fallback.handle,
+      title,
+      thumbnail,
+    };
   } catch (err) {
-    console.error("Failed to fetch TikTok oEmbed HTML:", err);
-    // Still return the URL so the homepage can show a fallback link even
-    // when the embed HTML itself couldn't be fetched.
-    return { url: trimmed, html: null };
+    console.error("Failed to fetch TikTok oEmbed info:", err);
+    return fallback;
+  }
+}
+
+interface TopXPost {
+  url: string;
+  handle: string;
+  text: string | null;
+}
+
+function xHandleFromUrl(url: string): string {
+  const match = url.match(/(?:twitter|x)\.com\/([^/?#]+)\/status/i);
+  return match ? `@${match[1]}` : "X";
+}
+
+async function getTopXPost(url: string | undefined): Promise<TopXPost | null> {
+  const trimmed = url && url.trim() ? url.trim() : null;
+  if (!trimmed) return null;
+
+  const link = cleanPostUrl(trimmed, ["/status/"]);
+  const fallback: TopXPost = { url: link, handle: xHandleFromUrl(link), text: null };
+
+  try {
+    const res = await fetch(
+      `https://publish.twitter.com/oembed?url=${encodeURIComponent(link)}&omit_script=1&dnt=true`,
+      { next: { revalidate } },
+    );
+    if (!res.ok) throw new Error(`X oEmbed responded ${res.status}`);
+    const body = await res.json();
+
+    // X's oEmbed returns the post as a ready-made HTML blockquote; the
+    // post text is the first <p> inside it.
+    const html: string = typeof body?.html === "string" ? body.html : "";
+    const paragraph = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    let text = paragraph
+      ? decodeEntities(paragraph[1].replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, ""))
+          .replace(/\s+/g, " ")
+          .trim()
+      : "";
+    if (text.length > 200) text = `${text.slice(0, 200).trim()}…`;
+
+    const authorMatch =
+      typeof body?.author_url === "string"
+        ? body.author_url.match(/(?:twitter|x)\.com\/([^/?#]+)/i)
+        : null;
+
+    return {
+      url: link,
+      handle: authorMatch ? `@${authorMatch[1]}` : fallback.handle,
+      text: text || null,
+    };
+  } catch (err) {
+    console.error("Failed to fetch X oEmbed info:", err);
+    return fallback;
   }
 }
 
 export async function GET() {
   const settings = await getLiveSettings();
-  const [facebook, tiktok] = await Promise.all([
-    getTopFacebookPost(),
+  const fbErrors: string[] = [];
+  const [facebook, x, tiktok] = await Promise.all([
+    getTopFacebookPost(fbErrors),
+    getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
-  const xUrl = settings.topXPostUrl && settings.topXPostUrl.trim() ? settings.topXPostUrl.trim() : null;
-  return NextResponse.json({ facebook, xUrl, tiktok });
+  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }) });
 }

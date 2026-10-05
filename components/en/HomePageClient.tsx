@@ -9,9 +9,8 @@ import LiveBanner from "@/components/shared/LiveBanner";
 import { formatDaysLeftLabel, getCategory, getDaysLeft } from "@/lib/data";
 import { homeConfigEn as cfg } from "@/lib/homeConfig.en";
 import type { Article, CategorySlug } from "@/lib/types";
-import XPostEmbed from "@/components/shared/XPostEmbed";
 import { useSocialTrending } from "@/lib/useSocialTrending";
-import TikTokEmbed from "@/components/shared/TikTokEmbed";
+import SocialLinkCard from "@/components/shared/SocialLinkCard";
 
 // All the actual markup/styling for the English homepage lives here, in a
 // Client Component, because it uses <style jsx> — which (as of Next 14)
@@ -41,7 +40,7 @@ export default function HomePageClient({
   worldArticles: Article[];
 }) {
   const heroCategory = getCategory(hero.category);
-  const { facebook: topFbPost, xUrl, tiktok } = useSocialTrending();
+  const { facebook: topFbPost, x: xPost, tiktok } = useSocialTrending();
   
   return (
     <>
@@ -194,25 +193,57 @@ export default function HomePageClient({
               <h3>{cfg.socialTrending.heading}</h3>
                          {cfg.socialTrending.cards.map((card) => {
               const isFacebook = card.platformIcon === "f";
-              const isX = card.platformIcon === "X";
+              // The X card is whichever card is neither Facebook nor TikTok (its badge in
+              // homeConfig is a special "𝕏" character, so comparing text is unreliable).
+              const isX = !isFacebook && !card.tiktok;
               const live = isFacebook ? topFbPost : null;
               const body = live?.body ?? card.body;
               const stats = live?.stats ?? card.stats;
 
-              if (isX && xUrl) {
+              if (isFacebook && live?.permalink) {
                 return (
-                  <div className="social-card social-card-x-embed" key={card.handle}>
-                    <XPostEmbed url={xUrl} />
-                  </div>
+                  <SocialLinkCard
+                    key={card.handle}
+                    url={live.permalink}
+                    handle={card.handle}
+                    icon={card.platformIcon}
+                    iconBg={card.platformBg}
+                    text={live.body}
+                    thumbnail={live.image}
+                    stats={live.stats}
+                    cta="Facebook ↗"
+                  />
                 );
               }
-              if (card.tiktok && tiktok?.html) {
+              if (isX && xPost) {
                 return (
-                  <div className="social-card social-card-tiktok-embed" key={card.handle}>
-                    <TikTokEmbed html={tiktok.html} />
-                  </div>
+                  <SocialLinkCard
+                    key={card.handle}
+                    url={xPost.url}
+                    handle={xPost.handle}
+                    icon={card.platformIcon}
+                    iconBg={card.platformBg}
+                    text={xPost.text}
+                    cta="X ↗"
+                  />
                 );
-              }     
+              }
+              if (card.tiktok && tiktok) {
+                return (
+                  <SocialLinkCard
+                    key={card.handle}
+                    url={tiktok.url}
+                    handle={tiktok.handle}
+                    icon={card.platformIcon}
+                    iconBg={card.platformBg}
+                    text={tiktok.title}
+                    video
+                    thumbnail={tiktok.thumbnail}
+                    cta="TikTok ↗"
+                  />
+                );
+              }
+
               return (
                 <div className="social-card" key={card.handle}>
                   <div className="social-card-head">
