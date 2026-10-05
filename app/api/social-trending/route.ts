@@ -235,6 +235,10 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
 interface LiveSettings {
   topXPostUrl?: string;
   topTikTokPostUrl?: string;
+  topXPostNoteDv?: string;
+  topXPostNoteEn?: string;
+  topTikTokPostNoteDv?: string;
+  topTikTokPostNoteEn?: string;
 }
 
 interface LiveSettingsDoc extends LiveSettings {
@@ -249,7 +253,7 @@ interface LiveSettingsDoc extends LiveSettings {
 async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number }> {
   try {
     const all: LiveSettingsDoc[] = await sanityClient.fetch(
-      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl }`,
+      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl, topXPostNoteDv, topXPostNoteEn, topTikTokPostNoteDv, topTikTokPostNoteEn }`,
       {},
       { cache: "no-store" },
     );
@@ -259,7 +263,14 @@ async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number
     const pick = (key: keyof LiveSettings) =>
       ordered.map((d) => d[key]).find((v) => typeof v === "string" && v.trim()) || undefined;
     return {
-      settings: { topXPostUrl: pick("topXPostUrl"), topTikTokPostUrl: pick("topTikTokPostUrl") },
+      settings: {
+        topXPostUrl: pick("topXPostUrl"),
+        topTikTokPostUrl: pick("topTikTokPostUrl"),
+        topXPostNoteDv: pick("topXPostNoteDv"),
+        topXPostNoteEn: pick("topXPostNoteEn"),
+        topTikTokPostNoteDv: pick("topTikTokPostNoteDv"),
+        topTikTokPostNoteEn: pick("topTikTokPostNoteEn"),
+      },
       docs: docs.length,
     };
   } catch (err) {
@@ -291,6 +302,9 @@ interface TopTikTokPost {
   handle: string;
   title: string | null;
   thumbnail: string | null;
+  // Short editor-written descriptions from Sanity (one per site language).
+  noteDv?: string | null;
+  noteEn?: string | null;
 }
 
 function tiktokHandleFromUrl(url: string): string {
@@ -345,6 +359,9 @@ interface TopXPost {
   url: string;
   handle: string;
   text: string | null;
+  // Short editor-written descriptions from Sanity (one per site language).
+  noteDv?: string | null;
+  noteEn?: string | null;
 }
 
 function xHandleFromUrl(url: string): string {
@@ -398,10 +415,17 @@ export async function GET() {
   const { settings, docs } = await getLiveSettings();
   const fbErrors: string[] = [];
   const fbDebug: string[] = [];
-  const [facebook, x, tiktok] = await Promise.all([
+  const [facebook, xBase, tiktokBase] = await Promise.all([
     getTopFacebookPost(fbErrors, fbDebug),
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
+  const note = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
+  const x = xBase
+    ? { ...xBase, noteDv: note(settings.topXPostNoteDv), noteEn: note(settings.topXPostNoteEn) }
+    : null;
+  const tiktok = tiktokBase
+    ? { ...tiktokBase, noteDv: note(settings.topTikTokPostNoteDv), noteEn: note(settings.topTikTokPostNoteEn) }
+    : null;
   return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }), ...(fbDebug.length ? { facebookDebug: fbDebug } : {}), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
 }

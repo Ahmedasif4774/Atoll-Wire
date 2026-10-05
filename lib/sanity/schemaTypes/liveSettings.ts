@@ -52,6 +52,24 @@ export default defineType({
       validation: (Rule) =>
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
     }),
+    defineField({
+      name: "topXPostNoteDv",
+      title: "X post — short description (Dhivehi)",
+      description:
+        "One or two short lines in Dhivehi explaining what this X post is about. Shown under the post on the Dhivehi homepage. Leave empty to show no description.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
+    }),
+    defineField({
+      name: "topXPostNoteEn",
+      title: "X post — short description (English)",
+      description:
+        "One or two short lines in English explaining what this X post is about. Shown under the post on the English homepage. Leave empty to show no description.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
+    }),
 
           defineField({
       name: "topTikTokPostUrl",
@@ -61,6 +79,24 @@ export default defineType({
       type: "url",
       validation: (Rule) =>
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
+    }),
+    defineField({
+      name: "topTikTokPostNoteDv",
+      title: "TikTok video — short description (Dhivehi)",
+      description:
+        "One or two short lines in Dhivehi explaining what this TikTok video is about. Shown under the video on the Dhivehi homepage. Leave empty to show no description.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
+    }),
+    defineField({
+      name: "topTikTokPostNoteEn",
+      title: "TikTok video — short description (English)",
+      description:
+        "One or two short lines in English explaining what this TikTok video is about. Shown under the video on the English homepage. Leave empty to show no description.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
     }),
   ],
   preview: {

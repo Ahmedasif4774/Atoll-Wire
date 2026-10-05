@@ -14,6 +14,8 @@ export interface TopXPost {
   url: string;
   handle: string;
   text: string | null;
+  noteDv?: string | null;
+  noteEn?: string | null;
 }
 
 export interface TopTikTokPost {
@@ -21,6 +23,8 @@ export interface TopTikTokPost {
   handle: string;
   title: string | null;
   thumbnail: string | null;
+  noteDv?: string | null;
+  noteEn?: string | null;
 }
 
 export interface SocialTrendingData {

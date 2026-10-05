@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { sanityClient } from "@/lib/sanity/client";
 import { SITE_URL } from "@/lib/siteUrl";
+import { cleanEnv, getPageToken, GRAPH_VERSION } from "@/lib/facebookPageToken";
 
 // Auto-posts an article to the AtollWire Facebook Page as soon as it's
 // approved in Sanity — see the "Facebook auto-posting" section in README.md
@@ -115,9 +116,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "incomplete payload — check webhook projection" }, { status: 400 });
   }
 
-  const pageId = process.env.FB_PAGE_ID;
-  const accessToken = process.env.FB_PAGE_ACCESS_TOKEN;
-  if (!pageId || !accessToken) {
+  const pageId = cleanEnv(process.env.FB_PAGE_ID);
+  const savedToken = cleanEnv(process.env.FB_PAGE_ACCESS_TOKEN);
+  if (!pageId || !savedToken) {
     console.error("[sanity-publish webhook] FB_PAGE_ID / FB_PAGE_ACCESS_TOKEN not set — cannot post to Facebook.");
     return NextResponse.json({ error: "Facebook credentials not configured" }, { status: 500 });
   }
@@ -130,9 +131,13 @@ export async function POST(req: Request) {
   const articleUrl = `${SITE_URL}/article/${payload.slug}`;
   const message = [payload.titleDv, payload.dekDv].filter(Boolean).join("\n\n");
 
+  // Posting needs the Page's own token; swap the saved (system-user) token
+  // for it when possible.
+  const accessToken = await getPageToken(pageId, savedToken);
+
   let fbPostId: string | null = null;
   try {
-    const fbRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+    const fbRes = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${pageId}/feed`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, link: articleUrl, access_token: accessToken }),
@@ -166,4 +171,61 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, postId: fbPostId });
+}
+
+// Read-only health check: open /api/webhooks/sanity-publish in a browser to
+// see whether everything auto-posting needs is in place, WITHOUT posting
+// anything. Shows only yes/no answers and counts — never tokens or secrets.
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const pageId = cleanEnv(process.env.FB_PAGE_ID);
+  const savedToken = cleanEnv(process.env.FB_PAGE_ACCESS_TOKEN);
+  const report: Record<string, unknown> = {
+    webhookSecretSet: !!process.env.SANITY_WEBHOOK_SECRET,
+    facebookPageIdSet: !!pageId,
+    facebookTokenSet: !!savedToken,
+    siteUrlUsedInPosts: SITE_URL,
+  };
+
+  if (pageId && savedToken) {
+    try {
+      const pageRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}?fields=id,name,access_token&access_token=${encodeURIComponent(savedToken)}`,
+        { cache: "no-store" },
+      );
+      const page = await pageRes.json();
+      report.facebookPage = pageRes.ok
+        ? { found: true, name: page?.name ?? null, pageTokenAvailable: !!page?.access_token }
+        : { found: false, error: String(page?.error?.message ?? pageRes.status).slice(0, 200) };
+
+      const permRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_VERSION}/me/permissions?access_token=${encodeURIComponent(savedToken)}`,
+        { cache: "no-store" },
+      );
+      const perms = await permRes.json();
+      report.tokenCanPost = permRes.ok
+        ? (perms?.data ?? []).some((d: { permission: string; status: string }) => d.permission === "pages_manage_posts" && d.status === "granted")
+        : "unknown";
+    } catch (err) {
+      report.facebookCheckError = (err instanceof Error ? err.message : String(err)).slice(0, 200);
+    }
+  }
+
+  try {
+    report.articlesApprovedNotYetPosted = await sanityClient.fetch(
+      `count(*[_type == "article" && status == "approved" && !(_id in path("drafts.**")) && !defined(socialPostedAt) && skipSocialShare != true])`,
+      {},
+      { cache: "no-store" },
+    );
+    report.articlesAlreadyPosted = await sanityClient.fetch(
+      `count(*[_type == "article" && !(_id in path("drafts.**")) && defined(socialPostedAt)])`,
+      {},
+      { cache: "no-store" },
+    );
+  } catch (err) {
+    report.sanityReadError = (err instanceof Error ? err.message : String(err)).slice(0, 200);
+  }
+
+  return NextResponse.json(report);
 }
