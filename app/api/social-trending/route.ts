@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { sanityClient } from "@/lib/sanity/client";
-import { liveSettingsQuery } from "@/lib/sanity/queries";
 
 // Powers the homepage's "socialTrending" sidebar cards with real content in
 // place of the hardcoded placeholder posts in lib/homeConfig.*.ts:
@@ -157,14 +156,34 @@ interface LiveSettings {
   topTikTokPostUrl?: string;
 }
 
-async function getLiveSettings(): Promise<LiveSettings> {
+interface LiveSettingsDoc extends LiveSettings {
+  _id?: string;
+}
+
+// Reads the pasted X / TikTok links from Sanity. If Sanity holds more than
+// one liveSettings document (for instance a published one plus a draft copy),
+// the old "just take the first one" approach could pick a document that
+// doesn't have the link in it. So instead: look at every document, published
+// ones first (newest first), and take the first non-empty value for each link.
+async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number }> {
   try {
-    const allSettings = await sanityClient.fetch(liveSettingsQuery, {}, { cache: "no-store" });
-    const settings = Array.isArray(allSettings) ? allSettings[0] : allSettings;
-    return settings ?? {};
+    const all: LiveSettingsDoc[] = await sanityClient.fetch(
+      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl }`,
+      {},
+      { cache: "no-store" },
+    );
+    const docs = Array.isArray(all) ? all : all ? [all as LiveSettingsDoc] : [];
+    const isDraft = (d: LiveSettingsDoc) => (d._id ?? "").startsWith("drafts.");
+    const ordered = [...docs.filter((d) => !isDraft(d)), ...docs.filter(isDraft)];
+    const pick = (key: keyof LiveSettings) =>
+      ordered.map((d) => d[key]).find((v) => typeof v === "string" && v.trim()) || undefined;
+    return {
+      settings: { topXPostUrl: pick("topXPostUrl"), topTikTokPostUrl: pick("topTikTokPostUrl") },
+      docs: docs.length,
+    };
   } catch (err) {
     console.error("Failed to read liveSettings from Sanity:", err);
-    return {};
+    return { settings: {}, docs: 0 };
   }
 }
 
@@ -295,12 +314,12 @@ async function getTopXPost(url: string | undefined): Promise<TopXPost | null> {
 }
 
 export async function GET() {
-  const settings = await getLiveSettings();
+  const { settings, docs } = await getLiveSettings();
   const fbErrors: string[] = [];
   const [facebook, x, tiktok] = await Promise.all([
     getTopFacebookPost(fbErrors),
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
-  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }) });
+  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
 }
