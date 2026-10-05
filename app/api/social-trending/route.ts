@@ -88,10 +88,53 @@ async function resolvePageToken(): Promise<string> {
   }
 }
 
+// Only used when Facebook refuses: asks Facebook a few harmless questions
+// about the token (who it belongs to, which permissions it carries, whether
+// the Page token swap worked) and returns them as short notes for GET to show.
+// Tokens themselves are never included in the notes.
+async function diagnoseFacebook(userToken: string, usedToken: string): Promise<string[]> {
+  const notes: string[] = [];
+  const get = async (path: string, token: string) => {
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${path}${path.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(token)}`,
+      { cache: "no-store" },
+    );
+    return { ok: res.ok, status: res.status, json: await res.json().catch(() => null) };
+  };
+  const msg = (j: { error?: { message?: string } } | null) => (j?.error?.message ?? "no message").slice(0, 160);
+  try {
+    const me = await get("me?fields=id,name", userToken);
+    notes.push(me.ok ? `token belongs to: ${me.json?.name ?? "?"} (${me.json?.id ?? "?"})` : `me failed: ${msg(me.json)}`);
+    const perms = await get("me/permissions", userToken);
+    notes.push(
+      perms.ok
+        ? `permissions on saved token: ${(perms.json?.data ?? []).filter((d: { status: string }) => d.status === "granted").map((d: { permission: string }) => d.permission).join(", ") || "none"}`
+        : `permissions check failed: ${msg(perms.json)}`,
+    );
+    const ex = await get(`${PAGE_ID}?fields=id,name,access_token`, userToken);
+    notes.push(
+      ex.ok
+        ? `page lookup ok: ${ex.json?.name ?? "?"}; page token ${ex.json?.access_token ? "received" : "NOT returned"}`
+        : `page lookup failed: ${msg(ex.json)}`,
+    );
+    if (usedToken !== userToken) {
+      const p2 = await get("me/permissions", usedToken);
+      notes.push(
+        p2.ok
+          ? `permissions on page token: ${(p2.json?.data ?? []).filter((d: { status: string }) => d.status === "granted").map((d: { permission: string }) => d.permission).join(", ") || "none"}`
+          : `page token permissions check failed: ${msg(p2.json)}`,
+      );
+    }
+  } catch (err) {
+    notes.push(`diagnostics error: ${err instanceof Error ? err.message : String(err)}`.slice(0, 160));
+  }
+  return notes;
+}
+
 // `errors` collects a short reason when Facebook can't be read, so GET can
 // show it in its response (it never contains the token) — that makes setup
 // problems visible without digging through Vercel's build logs.
-async function getTopFacebookPost(errors: string[]): Promise<TopFacebookPost | null> {
+async function getTopFacebookPost(errors: string[], debug: string[]): Promise<TopFacebookPost | null> {
   if (!PAGE_ID) {
     errors.push("FB_PAGE_ID is not set");
     return null;
@@ -147,6 +190,7 @@ async function getTopFacebookPost(errors: string[]): Promise<TopFacebookPost | n
     errors.push(
       (err instanceof Error ? err.message : String(err)).split(token).join("[token]").slice(0, 400)
     );
+    debug.push(...(await diagnoseFacebook(PAGE_ACCESS_TOKEN as string, token)));
     return null;
   }
 }
@@ -316,10 +360,11 @@ async function getTopXPost(url: string | undefined): Promise<TopXPost | null> {
 export async function GET() {
   const { settings, docs } = await getLiveSettings();
   const fbErrors: string[] = [];
+  const fbDebug: string[] = [];
   const [facebook, x, tiktok] = await Promise.all([
-    getTopFacebookPost(fbErrors),
+    getTopFacebookPost(fbErrors, fbDebug),
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
-  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null }), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
+  return NextResponse.json({ facebook, x, tiktok, ...(facebook ? {} : { facebookError: fbErrors[0] ?? null, facebookDebug: fbDebug }), ...(x ? {} : { xNote: `liveSettings documents found: ${docs}; X link ${settings.topXPostUrl ? "present" : "missing"}` }) });
 }
