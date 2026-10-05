@@ -54,6 +54,7 @@ function formatCount(n: number): string {
 
 interface FacebookPost {
   message?: string;
+  story?: string;
   permalink_url?: string;
   full_picture?: string;
   created_time: string;
@@ -152,9 +153,9 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
   // case is misleading. So try the full set of fields first and, if Facebook
   // refuses, step down to fewer fields rather than giving up entirely.
   const fieldSets = [
-    "message,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),comments.limit(0).summary(true),shares",
-    "message,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),shares",
-    "message,permalink_url,full_picture,created_time",
+    "message,story,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),comments.limit(0).summary(true),shares",
+    "message,story,permalink_url,full_picture,created_time,reactions.limit(0).summary(true),shares",
+    "message,story,permalink_url,full_picture,created_time",
   ];
 
   try {
@@ -180,8 +181,11 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
     // rather than going empty.
     const pool = todaysPosts.length ? todaysPosts : posts.slice(0, 5);
 
+    // Photo, video and link posts often have no caption, so don't insist on
+    // text — any post with a link can be the card (it shows the picture and
+    // counts, plus the caption when there is one).
     const scored = pool
-      .filter((p) => !!p.message)
+      .filter((p) => !!p.permalink_url)
       .map((p) => {
         const likes = p.reactions?.summary?.total_count ?? p.likes?.summary?.total_count ?? 0;
         const comments = p.comments?.summary?.total_count ?? 0;
@@ -191,9 +195,14 @@ async function getTopFacebookPost(errors: string[], debug: string[]): Promise<To
       .sort((a, b) => b.score - a.score);
 
     const top = scored[0];
-    if (!top) throw new Error("No post with text found to show");
+    if (!top) {
+      debug.push(
+        `posts returned: ${posts.length}; in today's pool: ${pool.length}; with text: ${pool.filter((p) => p.message || p.story).length}; with link: ${pool.filter((p) => p.permalink_url).length}; newest: ${posts[0]?.created_time ?? "n/a"}`,
+      );
+      throw new Error("No usable post found to show");
+    }
 
-    const message = top.post.message!;
+    const message = top.post.message || top.post.story || "";
     const preview = message.length > 160 ? `${message.slice(0, 160).trim()}…` : message;
 
     return {
