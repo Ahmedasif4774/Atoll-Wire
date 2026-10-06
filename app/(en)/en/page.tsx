@@ -48,6 +48,25 @@ function withPinnedAd(entries: ResolvedLatestEntry[], pinnedIndex: number): Reso
   return [...rest.slice(0, pinnedIndex), entries[adIndex], ...rest.slice(pinnedIndex)];
 }
 
+// Newest approved articles of one category (`all` is already newest-first),
+// as many as the curated list has slots; any shortfall is filled from the
+// curated slugs that exist and aren't already included.
+function newestInCategory(
+  all: Article[],
+  category: string,
+  curatedSlugs: string[],
+  bySlug: Map<string, Article>
+): Article[] {
+  const slots = curatedSlugs.length;
+  const picked = all.filter((a) => a.category === category).slice(0, slots);
+  for (const slug of curatedSlugs) {
+    if (picked.length >= slots) break;
+    const a = bySlug.get(slug);
+    if (a && !picked.includes(a)) picked.push(a);
+  }
+  return picked;
+}
+
 export default async function EnHomePage() {
   const all = await getAllArticles("en");
   const bySlug = new Map(all.map((a) => [a.slug, a]));
@@ -71,8 +90,12 @@ export default async function EnHomePage() {
       latestResolved.push({ article: newest[nextNewest++] });
     }
   }
-  const sportArticles = cfg.sportSlugs.map(req);
-  const worldArticles = cfg.worldSlugs.map(req);
+  // Sport and World fill themselves too: the newest approved articles in
+  // that category (same number of slots as homeConfig lists). If a category
+  // has fewer articles than slots, the gap is topped up from the hand-picked
+  // list so the section never looks half empty.
+  const sportArticles = newestInCategory(all, "sport", cfg.sportSlugs, bySlug);
+  const worldArticles = newestInCategory(all, "world", cfg.worldSlugs, bySlug);
 
   const latestDisplay = withPinnedAd(latestResolved, AD_DISPLAY_INDEX);
 
