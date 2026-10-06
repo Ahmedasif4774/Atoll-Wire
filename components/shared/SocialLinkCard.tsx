@@ -22,6 +22,10 @@ interface SocialLinkCardProps {
   // Small stat line (e.g. ["💬 12", "👍 340"]) shown above the call-to-action.
   // Used by the Facebook card.
   stats?: string[];
+  // Short editor-written explanation of what this post/video is about
+  // (already in the page's language — the Dhivehi page passes the Dhivehi
+  // text, the English page the English text). Optional.
+  description?: string | null;
   // Short call-to-action line at the bottom, e.g. "TikTok ↗".
   cta: string;
 }
@@ -41,6 +45,7 @@ export default function SocialLinkCard({
   video,
   thumbnail,
   stats,
+  description,
   cta,
 }: SocialLinkCardProps) {
   // If the preview picture fails to load (expired link, blocked), fall
@@ -149,6 +154,23 @@ export default function SocialLinkCard({
           </div>
         </div>
       </div>
+
+      {description && (
+        <div
+          dir="auto"
+          style={{
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: "1px solid rgba(14, 42, 71, 0.1)",
+            fontSize: 12.5,
+            lineHeight: 1.7,
+            color: "#52696c",
+            wordBreak: "break-word",
+          }}
+        >
+          {description}
+        </div>
+      )}
     </a>
   );
 }
