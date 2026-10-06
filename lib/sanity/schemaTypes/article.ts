@@ -160,6 +160,31 @@ export default defineType({
       group: "meta",
     }),
     defineField({
+      name: "homeMain",
+      title: "Homepage: Main story",
+      description:
+        "Tick to show this story as the BIG main story at the top of the homepage. If more than one story is ticked, the newest one is shown, so you never need to untick yesterday's. (Shows on the homepage of each language the story is written in.)",
+      type: "boolean",
+      initialValue: false,
+      group: "meta",
+    }),
+    defineField({
+      name: "homeEditor1",
+      title: "Homepage: Editor's choice 1",
+      description: "Tick to show this story as the first small card beside the weather box. The newest ticked story wins.",
+      type: "boolean",
+      initialValue: false,
+      group: "meta",
+    }),
+    defineField({
+      name: "homeEditor2",
+      title: "Homepage: Editor's choice 2",
+      description: "Tick to show this story as the second small card beside the weather box. The newest ticked story wins.",
+      type: "boolean",
+      initialValue: false,
+      group: "meta",
+    }),
+    defineField({
       name: "popular",
       title: "Popular",
       description:

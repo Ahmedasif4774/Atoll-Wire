@@ -101,6 +101,11 @@ export interface Article {
   // Site-wide "Popular News" sidebar toggle (editorial pick, not derived
   // from view counts — the original static site didn't track real analytics).
   popular?: boolean;
+  // Homepage slot tick boxes an editor sets on the article in Sanity. When
+  // several articles are ticked for the same slot, the newest one wins.
+  homeMain?: boolean;
+  homeEditor1?: boolean;
+  homeEditor2?: boolean;
   appeal?: AppealFields;
 }
 

@@ -1,5 +1,5 @@
 import HomePageClient from "@/components/en/HomePageClient";
-import { getAllArticles, getHomePicks } from "@/lib/data";
+import { getAllArticles } from "@/lib/data";
 import { resolveTopStories } from "@/lib/homePicks";
 import { homeConfigEn as cfg } from "@/lib/homeConfig.en";
 import type { Article } from "@/lib/types";
@@ -66,10 +66,10 @@ export default async function EnHomePage() {
   const all = await getAllArticles("en");
   const bySlug = new Map(all.map((a) => [a.slug, a]));
 
-  // Main story + editor's-choice cards: chosen by an editor in Sanity
-  // ("Homepage — top stories"), falling back to the defaults in homeConfig.
-  const picks = await getHomePicks("en");
-  const { hero, editorPair } = resolveTopStories(bySlug, picks, cfg);
+  // Main story + editor's-choice cards: whichever newest articles an editor
+  // ticked "Main story" / "Editor's choice 1/2" on in Sanity, falling back to
+  // the defaults in homeConfig for any slot nobody ticked.
+  const { hero, editorPair } = resolveTopStories(all, bySlug, cfg);
   // The "Latest" grid fills itself: the newest approved articles first
   // (getAllArticles is already newest-first), skipping the two stories shown
   // above it (main story + editor picks) so nothing appears twice. The
