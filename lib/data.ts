@@ -19,6 +19,7 @@ import { sanityClient } from "./sanity/client";
 import * as queries from "./sanity/queries";
 import { toVideoEmbedUrl } from "./videoEmbed";
 import { sizedImage } from "./imageUrl";
+import type { HomePicks } from "./homePicks";
 import { articleIdForNumber, numbersFor, publishedId } from "./articleNumbers";
 import raw from "@/data/content.json";
 import type {
@@ -320,4 +321,23 @@ export function formatDaysLeftLabel(lang: Lang, daysLeft: number): string {
     return daysLeft > 0 ? `ބާކީ ${daysLeft} ދުވަސް` : "އެންމެ ފަހު ދުވަސް";
   }
   return daysLeft > 0 ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : "Last day";
+}
+
+// The editor-chosen main story and editor's-choice cards for one homepage
+// (see lib/sanity/schemaTypes/homepageSettings.ts). Returns {} — meaning "use
+// the built-in defaults" — if nothing is chosen or the lookup fails, so the
+// homepage can never break because of this.
+export async function getHomePicks(lang: Lang): Promise<HomePicks> {
+  try {
+    const rows: { hero?: string | null; pick1?: string | null; pick2?: string | null }[] = await sanityClient.fetch(
+      queries.homepageSettingsQuery,
+      { lang },
+      NO_STORE,
+    );
+    const first = (key: "hero" | "pick1" | "pick2") => rows.map((r) => r[key]).find((v): v is string => !!v);
+    return { hero: first("hero"), pick1: first("pick1"), pick2: first("pick2") };
+  } catch (err) {
+    console.error("[homepage picks] could not read homepage settings — using defaults:", err);
+    return {};
+  }
 }

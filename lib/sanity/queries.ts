@@ -143,3 +143,16 @@ export const relatedArticlesQuery = /* groq */ `
 export const liveSettingsQuery = /* groq */ `
     *[_type == "liveSettings"] { youtubeLiveUrl, facebookLiveUrl, topXPostUrl, topTikTokPostUrl }
 `;
+
+// Singleton "Homepage — top stories" (lib/sanity/schemaTypes/homepageSettings.ts):
+// which stories fill the main-story and editor's-choice slots on the
+// homepage for one language ($lang). Reads the PUBLISHED document only, so
+// an unpublished edit never changes the live site. Returns slugs; lib/data.ts
+// resolves them against that language's article list.
+export const homepageSettingsQuery = /* groq */ `
+  *[_type == "homepageSettings" && !(_id in path("drafts.**"))] | order(_updatedAt desc) {
+    "hero": select($lang == "dv" => heroDv->slug.current, heroEn->slug.current),
+    "pick1": select($lang == "dv" => editorPickDv1->slug.current, editorPickEn1->slug.current),
+    "pick2": select($lang == "dv" => editorPickDv2->slug.current, editorPickEn2->slug.current)
+  }
+`;

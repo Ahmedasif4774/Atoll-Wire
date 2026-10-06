@@ -1,5 +1,6 @@
 import HomePageClient from "@/components/en/HomePageClient";
-import { getAllArticles } from "@/lib/data";
+import { getAllArticles, getHomePicks } from "@/lib/data";
+import { resolveTopStories } from "@/lib/homePicks";
 import { homeConfigEn as cfg } from "@/lib/homeConfig.en";
 import type { Article } from "@/lib/types";
 
@@ -18,12 +19,6 @@ import type { Article } from "@/lib/types";
 // to the burst of concurrent traffic rather than any real data problem.
 // Fetching the full article list ONCE and picking slugs out of it locally
 // avoids that concurrency entirely — one request instead of many.
-function reqFrom(bySlug: Map<string, Article>, slug: string): Article {
-  const a = bySlug.get(slug);
-  if (!a) throw new Error(`Home page config references missing en article: ${slug}`);
-  return a;
-}
-
 // One entry in the "Latest" grid, resolved: either a real fetched article,
 // or the pinned sponsored/native-ad slot passed straight through from
 // homeConfig.en.ts. cfg.latestMixed only carries slugs — this file resolves
@@ -70,16 +65,17 @@ function newestInCategory(
 export default async function EnHomePage() {
   const all = await getAllArticles("en");
   const bySlug = new Map(all.map((a) => [a.slug, a]));
-  const req = (slug: string) => reqFrom(bySlug, slug);
 
-  const hero = req(cfg.heroSlug);
-  const editorPair = cfg.editorPairSlugs.map(req);
+  // Main story + editor's-choice cards: chosen by an editor in Sanity
+  // ("Homepage — top stories"), falling back to the defaults in homeConfig.
+  const picks = await getHomePicks("en");
+  const { hero, editorPair } = resolveTopStories(bySlug, picks, cfg);
   // The "Latest" grid fills itself: the newest approved articles first
   // (getAllArticles is already newest-first), skipping the two stories shown
   // above it (main story + editor picks) so nothing appears twice. The
   // sponsored card keeps the slot homeConfig gives it. How many articles are
   // shown is simply however many non-ad slots the config lists.
-  const shownAbove = new Set([cfg.heroSlug, ...cfg.editorPairSlugs]);
+  const shownAbove = new Set([hero.slug, ...editorPair.map((a) => a.slug)]);
   const newest = all.filter((a) => !shownAbove.has(a.slug));
   let nextNewest = 0;
   const latestResolved: ResolvedLatestEntry[] = [];
