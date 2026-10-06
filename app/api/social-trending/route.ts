@@ -239,6 +239,8 @@ interface LiveSettings {
   topXPostNoteEn?: string;
   topTikTokPostNoteDv?: string;
   topTikTokPostNoteEn?: string;
+  topFacebookPostNoteDv?: string;
+  topFacebookPostNoteEn?: string;
 }
 
 interface LiveSettingsDoc extends LiveSettings {
@@ -253,7 +255,7 @@ interface LiveSettingsDoc extends LiveSettings {
 async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number }> {
   try {
     const all: LiveSettingsDoc[] = await sanityClient.fetch(
-      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl, topXPostNoteDv, topXPostNoteEn, topTikTokPostNoteDv, topTikTokPostNoteEn }`,
+      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl, topXPostNoteDv, topXPostNoteEn, topTikTokPostNoteDv, topTikTokPostNoteEn, topFacebookPostNoteDv, topFacebookPostNoteEn }`,
       {},
       { cache: "no-store" },
     );
@@ -270,6 +272,8 @@ async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number
         topXPostNoteEn: pick("topXPostNoteEn"),
         topTikTokPostNoteDv: pick("topTikTokPostNoteDv"),
         topTikTokPostNoteEn: pick("topTikTokPostNoteEn"),
+        topFacebookPostNoteDv: pick("topFacebookPostNoteDv"),
+        topFacebookPostNoteEn: pick("topFacebookPostNoteEn"),
       },
       docs: docs.length,
     };
@@ -415,12 +419,15 @@ export async function GET() {
   const { settings, docs } = await getLiveSettings();
   const fbErrors: string[] = [];
   const fbDebug: string[] = [];
-  const [facebook, xBase, tiktokBase] = await Promise.all([
+  const [facebookBase, xBase, tiktokBase] = await Promise.all([
     getTopFacebookPost(fbErrors, fbDebug),
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);
   const note = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
+  const facebook = facebookBase
+    ? { ...facebookBase, noteDv: note(settings.topFacebookPostNoteDv), noteEn: note(settings.topFacebookPostNoteEn) }
+    : null;
   const x = xBase
     ? { ...xBase, noteDv: note(settings.topXPostNoteDv), noteEn: note(settings.topXPostNoteEn) }
     : null;

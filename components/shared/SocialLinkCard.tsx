@@ -134,7 +134,7 @@ export default function SocialLinkCard({
               {text}
             </div>
           )}
-          {stats && stats.length > 0 && (
+          {description && stats && stats.length > 0 && (
             <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#52696c", marginBottom: 4 }}>
               {stats.map((st) => (
                 <span key={st}>{st}</span>
@@ -155,7 +155,7 @@ export default function SocialLinkCard({
         </div>
       </div>
 
-      {description && (
+      {(description || (stats && stats.length > 0)) && (
         <div
           dir="auto"
           style={{
@@ -168,7 +168,15 @@ export default function SocialLinkCard({
             wordBreak: "break-word",
           }}
         >
-          {description}
+          {description ? (
+            description
+          ) : (
+            <div style={{ display: "flex", gap: 10, direction: "ltr", unicodeBidi: "isolate" }}>
+              {(stats ?? []).map((st) => (
+                <span key={st}>{st}</span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </a>

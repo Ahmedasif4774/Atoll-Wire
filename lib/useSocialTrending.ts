@@ -8,6 +8,8 @@ export interface TopFacebookPost {
   permalink: string | null;
   stats: string[];
   image?: string | null;
+  noteDv?: string | null;
+  noteEn?: string | null;
 }
 
 export interface TopXPost {

@@ -209,6 +209,7 @@ export default function HomePageClient({
                     text={live.body}
                     thumbnail={live.image}
                     stats={live.stats}
+                    description={live.noteDv}
                     cta="Facebook ↗"
                   />
                 );

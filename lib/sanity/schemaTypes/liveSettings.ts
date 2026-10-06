@@ -53,6 +53,24 @@ export default defineType({
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
     }),
     defineField({
+      name: "topFacebookPostNoteDv",
+      title: "Facebook card — short description (Dhivehi)",
+      description:
+        "One or two short lines in Dhivehi shown under the Facebook card on the Dhivehi homepage. The Facebook post itself is picked automatically. Leave empty to show the post's reaction counts instead.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
+    }),
+    defineField({
+      name: "topFacebookPostNoteEn",
+      title: "Facebook card — short description (English)",
+      description:
+        "One or two short lines in English shown under the Facebook card on the English homepage. The Facebook post itself is picked automatically. Leave empty to show the post's reaction counts instead.",
+      type: "text",
+      rows: 2,
+      validation: (Rule) => Rule.max(200),
+    }),
+    defineField({
       name: "topXPostNoteDv",
       title: "X post — short description (Dhivehi)",
       description:
