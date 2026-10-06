@@ -81,7 +81,7 @@ export default function HomePageClient({
                 <a key={a.slug} className="editor-pair-card" href={`/en/article/${a.ref}`}>
                   <div className="ep-thumb">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                    <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                   </div>
                   <div className="ep-text">
                     <h4>{a.title}</h4>

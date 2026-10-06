@@ -172,7 +172,7 @@ export default function ArticlePageClient({
                   <a className="sidebar-more-item" href={`/en/article/${a.ref}`} key={a.slug}>
                     <div className="smi-thumb">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                      <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                     </div>
                     <div>
                       <h4>{a.title}</h4>

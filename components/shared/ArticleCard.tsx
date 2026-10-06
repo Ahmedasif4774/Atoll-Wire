@@ -51,7 +51,7 @@ export default function ArticleCard({
         {sponsored && <span className="ad-badge">{sponsored.badgeLabel}</span>}
         <div className="thumb">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image} alt={imageAlt} />
+          <img src={image} alt={imageAlt} loading="lazy" decoding="async" />
           {deadlineLabel && <span className="deadline-badge">⏳ {deadlineLabel}</span>}
         </div>
         <div className="body">

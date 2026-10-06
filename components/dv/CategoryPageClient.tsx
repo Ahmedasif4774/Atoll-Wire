@@ -70,7 +70,7 @@ export default function CategoryPageClient({
                 {secondary.map((a) => (
                   <a key={a.slug} className="tile" href={`/article/${a.ref}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                    <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                     <DeadlineBadge article={a} />
                     <div className="overlay">
                       <div>
@@ -93,7 +93,7 @@ export default function CategoryPageClient({
               {articles.map((a) => (
                 <a key={a.slug} className="feed-item" href={`/article/${a.ref}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                  <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                   <DeadlineBadge article={a} />
                   <div className="overlay">
                     <div>
@@ -132,7 +132,7 @@ export default function CategoryPageClient({
                 <span className="num">{idx + 1}</span>
                 <div className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                  <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                 </div>
                 <h5>{a.title}</h5>
               </a>

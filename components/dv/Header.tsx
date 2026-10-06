@@ -122,7 +122,7 @@ export default function Header({ enHref }: { enHref: string }) {
                     >
                       <div className="search-result-thumb">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={a.heroImage.url} alt={a.heroImage.alt} />
+                        <img src={a.heroImage.url} alt={a.heroImage.alt} loading="lazy" decoding="async" />
                       </div>
                       <span className="search-result-title">{a.title}</span>
                     </Link>

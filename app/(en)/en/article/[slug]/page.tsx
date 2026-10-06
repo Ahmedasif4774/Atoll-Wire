@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import ArticlePageClient from "@/components/en/ArticlePageClient";
 import { getAllArticles, getArticle, getRecentArticles, getRelatedArticles } from "@/lib/data";
 import { SITE_URL } from "@/lib/siteUrl";
+import { socialImage } from "@/lib/imageUrl";
 
 // Server Component wrapper (needed for generateStaticParams) — see the
 // comment at the top of components/en/ArticlePageClient.tsx for why the
@@ -31,13 +32,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       url,
       siteName: "AtollWire",
       type: "article",
-      images: article.heroImage?.url ? [{ url: article.heroImage.url, alt: article.heroImage.alt }] : undefined,
+      images: article.heroImage?.url ? [{ url: socialImage(article.heroImage.url), width: 1200, height: 630, alt: article.heroImage.alt }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: article.dek || undefined,
-      images: article.heroImage?.url ? [article.heroImage.url] : undefined,
+      images: article.heroImage?.url ? [socialImage(article.heroImage.url)] : undefined,
     },
   };
 }

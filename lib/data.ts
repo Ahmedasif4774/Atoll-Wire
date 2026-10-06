@@ -18,6 +18,7 @@
 import { sanityClient } from "./sanity/client";
 import * as queries from "./sanity/queries";
 import { toVideoEmbedUrl } from "./videoEmbed";
+import { sizedImage } from "./imageUrl";
 import { articleIdForNumber, numbersFor, publishedId } from "./articleNumbers";
 import raw from "@/data/content.json";
 import type {
@@ -106,7 +107,7 @@ function blocksToBody(blocks: PortableBlock[] | undefined): ArticleBodyBlock[] {
       }
       if (b?._type === "image") {
         return b.imageUrl
-          ? { type: "photo", imageUrl: b.imageUrl, alt: b.alt, caption: b.caption, size: b.size ?? "large" }
+          ? { type: "photo", imageUrl: sizedImage(b.imageUrl, 1600), alt: b.alt, caption: b.caption, size: b.size ?? "large" }
           : null;
       }
       if (b?._type === "videoEmbed") {
@@ -178,7 +179,7 @@ function mapArticle(a: RawArticle, lang: Lang, number?: number): Article {
     author: { name: a.author?.name ?? "", initials: a.author?.initials ?? "" },
     timeAgo: timeAgoFromISO(a.publishedAt),
     readTime: readTimeFromBlocks(a.body),
-    heroImage: { url: a.heroImage?.url ?? "", alt: a.heroImage?.alt ?? "" },
+    heroImage: { url: sizedImage(a.heroImage?.url ?? "", 1200), alt: a.heroImage?.alt ?? "" },
     caption: a.caption ?? "",
     body: blocksToBody(a.body),
     tags: a.tags ?? [],
