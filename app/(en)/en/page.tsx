@@ -55,9 +55,22 @@ export default async function EnHomePage() {
 
   const hero = req(cfg.heroSlug);
   const editorPair = cfg.editorPairSlugs.map(req);
-  const latestResolved: ResolvedLatestEntry[] = cfg.latestMixed.map((entry) =>
-    "ad" in entry ? entry : { article: req(entry.slug) }
-  );
+  // The "Latest" grid fills itself: the newest approved articles first
+  // (getAllArticles is already newest-first), skipping the two stories shown
+  // above it (main story + editor picks) so nothing appears twice. The
+  // sponsored card keeps the slot homeConfig gives it. How many articles are
+  // shown is simply however many non-ad slots the config lists.
+  const shownAbove = new Set([cfg.heroSlug, ...cfg.editorPairSlugs]);
+  const newest = all.filter((a) => !shownAbove.has(a.slug));
+  let nextNewest = 0;
+  const latestResolved: ResolvedLatestEntry[] = [];
+  for (const entry of cfg.latestMixed) {
+    if ("ad" in entry) {
+      latestResolved.push(entry);
+    } else if (nextNewest < newest.length) {
+      latestResolved.push({ article: newest[nextNewest++] });
+    }
+  }
   const sportArticles = cfg.sportSlugs.map(req);
   const worldArticles = cfg.worldSlugs.map(req);
 
