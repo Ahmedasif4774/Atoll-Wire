@@ -311,10 +311,21 @@ export default function HomePageClient({
           gap: 24px;
           padding: 24px 0 0;
         }
+        /* Photo fills the full height of its grid cell so its bottom edge
+           lines up with the editor cards beside it and the divider below
+           (no leftover gap under the photo). */
+        :global(.hero-lead) {
+          display: flex;
+        }
+        :global(.hero-lead > a) {
+          display: block;
+          width: 100%;
+        }
         :global(.hero-lead .thumb) {
           aspect-ratio: 16/10;
+          height: 100%;
           border-radius: 10px;
-          margin-bottom: 14px;
+          margin-bottom: 0;
           position: relative;
           overflow: hidden;
           background: var(--sea-dim);
