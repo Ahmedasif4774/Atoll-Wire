@@ -54,7 +54,7 @@ export default function HomePageClient({
 
         <section className="hero">
           <article className="hero-lead">
-            <a href={`/article/${hero.slug}`}>
+            <a href={`/article/${hero.ref}`}>
               <div className="thumb">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={hero.heroImage.url} alt={hero.heroImage.alt} />
@@ -76,7 +76,7 @@ export default function HomePageClient({
             <PrayerWidget />
             <div className="editor-pair-row">
               {editorPair.map((a) => (
-                <a key={a.slug} className="editor-pair-card" href={`/article/${a.slug}`}>
+                <a key={a.slug} className="editor-pair-card" href={`/article/${a.ref}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.heroImage.url} alt={a.heroImage.alt} />
                   <div className="ep-overlay">
@@ -124,7 +124,7 @@ export default function HomePageClient({
                     return (
                       <ArticleCard
                         key={a.slug}
-                        href={`/article/${a.slug}`}
+                        href={`/article/${a.ref}`}
                         image={a.heroImage.url}
                         imageAlt={a.heroImage.alt}
                         category={a.category}
@@ -148,7 +148,7 @@ export default function HomePageClient({
               {sportArticles.map((a) => (
                 <ArticleCard
                   key={a.slug}
-                  href={`/article/${a.slug}`}
+                  href={`/article/${a.ref}`}
                   image={a.heroImage.url}
                   imageAlt={a.heroImage.alt}
                   category={a.category}
@@ -168,7 +168,7 @@ export default function HomePageClient({
               {worldArticles.map((a) => (
                 <ArticleCard
                   key={a.slug}
-                  href={`/article/${a.slug}`}
+                  href={`/article/${a.ref}`}
                   image={a.heroImage.url}
                   imageAlt={a.heroImage.alt}
                   category={a.category}
@@ -222,6 +222,7 @@ export default function HomePageClient({
                     icon={card.platformIcon}
                     iconBg={card.platformBg}
                     text={xPost.text}
+                    description={xPost.noteDv}
                     cta="X ↗"
                   />
                 );
@@ -237,6 +238,7 @@ export default function HomePageClient({
                     text={tiktok.title}
                     video
                     thumbnail={tiktok.thumbnail}
+                    description={tiktok.noteDv}
                     cta="TikTok ↗"
                   />
                 );

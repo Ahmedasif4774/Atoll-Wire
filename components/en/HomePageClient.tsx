@@ -56,7 +56,7 @@ export default function HomePageClient({
 
         <section className="hero">
           <article className="hero-lead">
-            <a href={`/en/article/${hero.slug}`}>
+            <a href={`/en/article/${hero.ref}`}>
               <div className="thumb">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={hero.heroImage.url} alt={hero.heroImage.alt} />
@@ -78,7 +78,7 @@ export default function HomePageClient({
             <PrayerWidget />
             <div className="editor-pair-row">
               {editorPair.map((a) => (
-                <a key={a.slug} className="editor-pair-card" href={`/en/article/${a.slug}`}>
+                <a key={a.slug} className="editor-pair-card" href={`/en/article/${a.ref}`}>
                   <div className="ep-thumb">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={a.heroImage.url} alt={a.heroImage.alt} />
@@ -126,7 +126,7 @@ export default function HomePageClient({
                     return (
                       <ArticleCard
                         key={a.slug}
-                        href={`/en/article/${a.slug}`}
+                        href={`/en/article/${a.ref}`}
                         image={a.heroImage.url}
                         imageAlt={a.heroImage.alt}
                         category={a.category}
@@ -150,7 +150,7 @@ export default function HomePageClient({
               {sportArticles.map((a) => (
                 <ArticleCard
                   key={a.slug}
-                  href={`/en/article/${a.slug}`}
+                  href={`/en/article/${a.ref}`}
                   image={a.heroImage.url}
                   imageAlt={a.heroImage.alt}
                   category={a.category}
@@ -170,7 +170,7 @@ export default function HomePageClient({
               {worldArticles.map((a) => (
                 <ArticleCard
                   key={a.slug}
-                  href={`/en/article/${a.slug}`}
+                  href={`/en/article/${a.ref}`}
                   image={a.heroImage.url}
                   imageAlt={a.heroImage.alt}
                   category={a.category}
@@ -224,6 +224,7 @@ export default function HomePageClient({
                     icon={card.platformIcon}
                     iconBg={card.platformBg}
                     text={xPost.text}
+                    description={xPost.noteEn}
                     cta="X ↗"
                   />
                 );
@@ -239,6 +240,7 @@ export default function HomePageClient({
                     text={tiktok.title}
                     video
                     thumbnail={tiktok.thumbnail}
+                    description={tiktok.noteEn}
                     cta="TikTok ↗"
                   />
                 );

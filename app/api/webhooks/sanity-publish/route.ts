@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { sanityClient } from "@/lib/sanity/client";
 import { SITE_URL } from "@/lib/siteUrl";
 import { cleanEnv, getPageToken, GRAPH_VERSION } from "@/lib/facebookPageToken";
+import { ensureArticleNumber } from "@/lib/articleNumbers";
 
 // Auto-posts an article to the AtollWire Facebook Page as soon as it's
 // approved in Sanity — see the "Facebook auto-posting" section in README.md
@@ -99,10 +100,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
   }
 
-  // ---- Gates: any one of these being true means "don't post" ----
   if (payload._type !== "article") {
     return NextResponse.json({ skipped: "not an article document" });
   }
+
+  // Give the article its permanent public number (the 10234 in
+  // /article/10234) the first time we see it — whether or not it's approved
+  // or going to Facebook. Best-effort: if it fails (for example the API
+  // token can't write), links simply keep using the slug until it works.
+  let articleNumber: number | null = null;
+  if (payload._id) {
+    try {
+      articleNumber = await ensureArticleNumber(payload._id);
+    } catch (err) {
+      console.error("[sanity-publish webhook] could not assign an article number:", err);
+    }
+  }
+
+  // ---- Gates: any one of these being true means "don't post" ----
   if (payload.status !== "approved") {
     return NextResponse.json({ skipped: "article is not Approved" });
   }
@@ -156,7 +171,7 @@ export async function POST(req: Request) {
   // page's Open Graph tags (see generateMetadata in
   // app/(dv)/article/[slug]/page.tsx), so we don't need to attach an image
   // here ourselves.
-  const articleUrl = `${SITE_URL}/article/${payload.slug}`;
+  const articleUrl = `${SITE_URL}/article/${articleNumber ?? payload.slug}`;
   const message = [payload.titleDv, payload.dekDv].filter(Boolean).join("\n\n");
 
   // Posting needs the Page's own token; swap the saved (system-user) token
@@ -251,6 +266,11 @@ export async function GET() {
     report.articlesThatWouldPostIfSavedNow = await sanityClient.fetch(
       `count(*[_type == "article" && status == "approved" && !(_id in path("drafts.**")) && !defined(socialPostedAt) && skipSocialShare != true && coalesce(publishedAt, _createdAt) >= $cutoff])`,
       { cutoff },
+      { cache: "no-store" },
+    );
+    report.articlesWithoutNumber = await sanityClient.fetch(
+      `count(*[_type == "article" && !(_id in path("drafts.**")) && count(*[_id == "articleNumber." + ^._id]) == 0])`,
+      {},
       { cache: "no-store" },
     );
     report.articlesAlreadyPosted = await sanityClient.fetch(

@@ -113,7 +113,7 @@ export default function Header({ enHref }: { enHref: string }) {
                   results.map((a) => (
                     <Link
                       key={a.slug}
-                      href={`/article/${a.slug}`}
+                      href={`/article/${a.ref}`}
                       className="search-result"
                       onClick={() => {
                         setQuery("");

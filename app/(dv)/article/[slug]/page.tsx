@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import ArticlePageClient from "@/components/dv/ArticlePageClient";
 import { getAllArticles, getArticle, getRecentArticles, getRelatedArticles } from "@/lib/data";
@@ -9,7 +9,7 @@ import { SITE_URL } from "@/lib/siteUrl";
 // actual page markup lives there instead of here.
 export async function generateStaticParams() {
   const articles = await getAllArticles("dv");
-  return articles.map((a) => ({ slug: a.slug }));
+  return articles.map((a) => ({ slug: a.ref }));
 }
 
 // Without this, sharing an article link (Facebook, X, WhatsApp, iMessage...)
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const article = await getArticle("dv", params.slug);
   if (!article) return {};
 
-  const url = `${SITE_URL}/article/${article.slug}`;
+  const url = `${SITE_URL}/article/${article.ref}`;
   return {
     title: article.title,
     description: article.dek || undefined,
@@ -45,6 +45,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function DvArticlePage({ params }: { params: { slug: string } }) {
   const article = await getArticle("dv", params.slug);
   if (!article) notFound();
+
+  // Old-style link (/article/some-slug) for an article that now has a
+  // permanent number: send the visitor — and search engines — to the
+  // numbered address so there is one canonical link per story.
+  if (article.ref !== params.slug) permanentRedirect(`/article/${article.ref}`);
 
   const [recent, related] = await Promise.all([
     getRecentArticles("dv", article.slug, 4),

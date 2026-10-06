@@ -21,7 +21,7 @@ export default function ArticlePageClient({
 }) {
   return (
     <>
-      <Header dvHref={`/article/${article.slug}`} />
+      <Header dvHref={`/article/${article.ref}`} />
       <Nav active={article.category as CategorySlug} />
       <main>
         <div className="article-page-grid">
@@ -169,7 +169,7 @@ export default function ArticlePageClient({
               <div className="sidebar-more">
                 <h3 className="sidebar-more-title">Latest News</h3>
                 {recent.map((a) => (
-                  <a className="sidebar-more-item" href={`/en/article/${a.slug}`} key={a.slug}>
+                  <a className="sidebar-more-item" href={`/en/article/${a.ref}`} key={a.slug}>
                     <div className="smi-thumb">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={a.heroImage.url} alt={a.heroImage.alt} />
@@ -192,7 +192,7 @@ export default function ArticlePageClient({
               {related.map((a) => (
                 <ArticleCard
                   key={a.slug}
-                  href={`/en/article/${a.slug}`}
+                  href={`/en/article/${a.ref}`}
                   image={a.heroImage.url}
                   imageAlt={a.heroImage.alt}
                   category={a.category}

@@ -18,6 +18,7 @@
 import { sanityClient } from "./sanity/client";
 import * as queries from "./sanity/queries";
 import { toVideoEmbedUrl } from "./videoEmbed";
+import { articleIdForNumber, numbersFor, publishedId } from "./articleNumbers";
 import raw from "@/data/content.json";
 import type {
   AppealFields,
@@ -149,6 +150,7 @@ function formatAppeal(lang: Lang, a: RawAppeal | null | undefined): AppealFields
 
 interface RawArticle {
   slug: string;
+  id?: string;
   category: CategorySlug;
   title: string;
   dek?: string;
@@ -163,9 +165,12 @@ interface RawArticle {
   appeal?: RawAppeal | null;
 }
 
-function mapArticle(a: RawArticle, lang: Lang): Article {
+// number = the article's permanent public number, if it has one yet (see
+// lib/articleNumbers.ts); links use it in place of the slug.
+function mapArticle(a: RawArticle, lang: Lang, number?: number): Article {
   return {
     slug: a.slug,
+    ref: typeof number === "number" ? String(number) : a.slug,
     lang,
     category: a.category,
     title: a.title,
@@ -181,6 +186,12 @@ function mapArticle(a: RawArticle, lang: Lang): Article {
     popular: !!a.popular,
     appeal: formatAppeal(lang, a.appeal),
   };
+}
+
+// Maps a batch of raw articles, attaching each one's permanent number.
+async function mapAll(raws: RawArticle[], lang: Lang): Promise<Article[]> {
+  const numbers = await numbersFor(raws.map((a) => a.id ?? "").filter(Boolean));
+  return raws.map((a) => mapArticle(a, lang, a.id ? numbers.get(publishedId(a.id)) : undefined));
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -201,34 +212,52 @@ const NO_STORE = { cache: "no-store" as const };
 
 export async function getAllArticles(lang: Lang): Promise<Article[]> {
   const raws: RawArticle[] = await sanityClient.fetch(queries.allArticlesQuery, { lang }, NO_STORE);
-  return raws.map((a) => mapArticle(a, lang));
+  return mapAll(raws, lang);
 }
 
-export async function getArticle(lang: Lang, slug: string): Promise<Article | undefined> {
-  const a: RawArticle | null = await sanityClient.fetch(queries.articleBySlugQuery, { lang, slug }, NO_STORE);
-  return a ? mapArticle(a, lang) : undefined;
+// `ref` is whatever followed /article/ in the URL: a permanent number
+// ("10234") or, for older links and not-yet-numbered articles, a slug. An
+// all-digit ref is tried as a number first, then as a slug (in case a slug
+// happens to be all digits, like "2026").
+export async function getArticle(lang: Lang, ref: string): Promise<Article | undefined> {
+  if (/^\d{1,12}$/.test(ref)) {
+    try {
+      const id = await articleIdForNumber(Number(ref));
+      if (id) {
+        const byId: RawArticle | null = await sanityClient.fetch(queries.articleByIdQuery, { lang, id }, NO_STORE);
+        // The number came from the URL itself, so use it directly — that
+        // way the page can never decide its own number differs from the
+        // address it was opened at.
+        if (byId) return mapArticle(byId, lang, Number(ref));
+      }
+    } catch (err) {
+      console.error("[article numbers] lookup by number failed — trying it as a slug:", err);
+    }
+  }
+  const a: RawArticle | null = await sanityClient.fetch(queries.articleBySlugQuery, { lang, slug: ref }, NO_STORE);
+  return a ? (await mapAll([a], lang))[0] : undefined;
 }
 
 export async function getArticlesByCategory(lang: Lang, category: CategorySlug): Promise<Article[]> {
   const raws: RawArticle[] = await sanityClient.fetch(queries.articlesByCategoryQuery, { lang, category }, NO_STORE);
-  return raws.map((a) => mapArticle(a, lang));
+  return mapAll(raws, lang);
 }
 
 export async function getFeaturedArticles(lang: Lang): Promise<Article[]> {
   const raws: RawArticle[] = await sanityClient.fetch(queries.featuredArticlesQuery, { lang }, NO_STORE);
-  return raws.map((a) => mapArticle(a, lang));
+  return mapAll(raws, lang);
 }
 
 export async function getPopularArticles(lang: Lang): Promise<Article[]> {
   const raws: RawArticle[] = await sanityClient.fetch(queries.popularArticlesQuery, { lang }, NO_STORE);
-  return raws.map((a) => mapArticle(a, lang));
+  return mapAll(raws, lang);
 }
 
 // A handful of "most recent" items for a sidebar, excluding one slug
 // (typically the article currently being read).
 export async function getRecentArticles(lang: Lang, excludeSlug: string, limit = 4): Promise<Article[]> {
   const raws: RawArticle[] = await sanityClient.fetch(queries.recentArticlesQuery, { lang, excludeSlug }, NO_STORE);
-  return raws.slice(0, limit).map((a) => mapArticle(a, lang));
+  return mapAll(raws.slice(0, limit), lang);
 }
 
 // Articles in the same category as `slug`, excluding the article itself —
@@ -241,7 +270,7 @@ export async function getRelatedArticles(lang: Lang, slug: string, limit = 4): P
     { lang, slug, category: current.category },
     NO_STORE
   );
-  return raws.slice(0, limit).map((a) => mapArticle(a, lang));
+  return mapAll(raws.slice(0, limit), lang);
 }
 
 // Case-insensitive match against title, dek, and tags — used by the header

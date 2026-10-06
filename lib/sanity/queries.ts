@@ -21,6 +21,9 @@
 
 const articleProjection = /* groq */ `{
   "slug": slug.current,
+  // The document id — lib/data.ts uses it to look up the article's
+  // permanent public number (see lib/articleNumbers.ts).
+  "id": _id,
   "lang": $lang,
   "category": category->slug.current,
   "title": select($lang == "dv" => titleDv, titleEn),
@@ -83,6 +86,12 @@ const APPROVED = `status == "approved"`;
 
 export const articleBySlugQuery = /* groq */ `
   *[_type == "article" && slug.current == $slug && ${APPROVED}][0] ${articleProjection}
+`;
+
+// Used for numeric links (/article/10234): lib/data.ts first looks up which
+// article owns the number, then fetches it by id here. Published copy only.
+export const articleByIdQuery = /* groq */ `
+  *[_type == "article" && _id == $id && ${APPROVED}][0] ${articleProjection}
 `;
 
 export const allArticlesQuery = /* groq */ `

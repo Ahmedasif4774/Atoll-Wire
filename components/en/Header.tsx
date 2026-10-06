@@ -107,7 +107,7 @@ export default function Header({ dvHref }: { dvHref: string }) {
                   results.map((a) => (
                     <Link
                       key={a.slug}
-                      href={`/en/article/${a.slug}`}
+                      href={`/en/article/${a.ref}`}
                       className="search-result"
                       onClick={() => {
                         setQuery("");

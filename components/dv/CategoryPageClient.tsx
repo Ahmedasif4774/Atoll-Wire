@@ -45,7 +45,7 @@ export default function CategoryPageClient({
 
         {major && (
           <div className="feature-strip">
-            <a className="feature-major" href={`/article/${major.slug}`}>
+            <a className="feature-major" href={`/article/${major.ref}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={major.heroImage.url} alt={major.heroImage.alt} />
               <DeadlineBadge article={major} />
@@ -68,7 +68,7 @@ export default function CategoryPageClient({
                 }
               >
                 {secondary.map((a) => (
-                  <a key={a.slug} className="tile" href={`/article/${a.slug}`}>
+                  <a key={a.slug} className="tile" href={`/article/${a.ref}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={a.heroImage.url} alt={a.heroImage.alt} />
                     <DeadlineBadge article={a} />
@@ -91,7 +91,7 @@ export default function CategoryPageClient({
           {articles.length > 0 ? (
             <div className="news-feed">
               {articles.map((a) => (
-                <a key={a.slug} className="feed-item" href={`/article/${a.slug}`}>
+                <a key={a.slug} className="feed-item" href={`/article/${a.ref}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.heroImage.url} alt={a.heroImage.alt} />
                   <DeadlineBadge article={a} />
@@ -128,7 +128,7 @@ export default function CategoryPageClient({
             </div>
             <h3>މަޤުބޫލު ޚަބަރު</h3>
             {popular.map((a, idx) => (
-              <a key={a.slug} className="pop-item" href={`/article/${a.slug}`}>
+              <a key={a.slug} className="pop-item" href={`/article/${a.ref}`}>
                 <span className="num">{idx + 1}</span>
                 <div className="thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

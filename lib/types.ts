@@ -80,6 +80,10 @@ export interface AppealFields {
 
 export interface Article {
   slug: string;
+  // What goes after /article/ in links to this article: its permanent number
+  // as text (e.g. "10234") once it has one, otherwise its slug. Always build
+  // article links from `ref`, never from `slug`.
+  ref: string;
   lang: Lang;
   category: CategorySlug;
   title: string;
