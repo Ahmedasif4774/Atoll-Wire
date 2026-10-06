@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sanityClient } from "@/lib/sanity/client";
+import { sizedImage } from "@/lib/imageUrl";
 
 // Powers the homepage's "socialTrending" sidebar cards with real content in
 // place of the hardcoded placeholder posts in lib/homeConfig.*.ts:
@@ -241,6 +242,10 @@ interface LiveSettings {
   topTikTokPostNoteEn?: string;
   topFacebookPostNoteDv?: string;
   topFacebookPostNoteEn?: string;
+  topFacebookPostUrl?: string;
+  topFacebookPostPageName?: string;
+  topFacebookPostText?: string;
+  topFacebookPostImage?: string;
 }
 
 interface LiveSettingsDoc extends LiveSettings {
@@ -255,7 +260,7 @@ interface LiveSettingsDoc extends LiveSettings {
 async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number }> {
   try {
     const all: LiveSettingsDoc[] = await sanityClient.fetch(
-      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl, topXPostNoteDv, topXPostNoteEn, topTikTokPostNoteDv, topTikTokPostNoteEn, topFacebookPostNoteDv, topFacebookPostNoteEn }`,
+      `*[_type == "liveSettings"] | order(_updatedAt desc) { _id, topXPostUrl, topTikTokPostUrl, topXPostNoteDv, topXPostNoteEn, topTikTokPostNoteDv, topTikTokPostNoteEn, topFacebookPostNoteDv, topFacebookPostNoteEn, topFacebookPostUrl, topFacebookPostPageName, topFacebookPostText, "topFacebookPostImage": topFacebookPostImage.asset->url }`,
       {},
       { cache: "no-store" },
     );
@@ -274,6 +279,10 @@ async function getLiveSettings(): Promise<{ settings: LiveSettings; docs: number
         topTikTokPostNoteEn: pick("topTikTokPostNoteEn"),
         topFacebookPostNoteDv: pick("topFacebookPostNoteDv"),
         topFacebookPostNoteEn: pick("topFacebookPostNoteEn"),
+        topFacebookPostUrl: pick("topFacebookPostUrl"),
+        topFacebookPostPageName: pick("topFacebookPostPageName"),
+        topFacebookPostText: pick("topFacebookPostText"),
+        topFacebookPostImage: pick("topFacebookPostImage"),
       },
       docs: docs.length,
     };
@@ -420,7 +429,17 @@ export async function GET() {
   const fbErrors: string[] = [];
   const fbDebug: string[] = [];
   const [facebookBase, xBase, tiktokBase] = await Promise.all([
-    getTopFacebookPost(fbErrors, fbDebug),
+    // A link pasted into Sanity wins; otherwise fall back to the automatic
+    // pick from AtollWire's own Facebook Page.
+    settings.topFacebookPostUrl
+      ? Promise.resolve<TopFacebookPost>({
+          handle: settings.topFacebookPostPageName?.trim() || "Facebook",
+          body: settings.topFacebookPostText?.trim() ?? "",
+          permalink: settings.topFacebookPostUrl.trim(),
+          stats: [],
+          image: settings.topFacebookPostImage ? sizedImage(settings.topFacebookPostImage, 400) : null,
+        })
+      : getTopFacebookPost(fbErrors, fbDebug),
     getTopXPost(settings.topXPostUrl),
     getTopTikTokPost(settings.topTikTokPostUrl),
   ]);

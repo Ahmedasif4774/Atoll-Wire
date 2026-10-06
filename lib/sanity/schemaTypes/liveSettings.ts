@@ -53,6 +53,37 @@ export default defineType({
         Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
     }),
     defineField({
+      name: "topFacebookPostUrl",
+      title: "Today's top Facebook post URL",
+      description:
+        "Paste the link of the Facebook post you want in the homepage's \"Trending on Social Media\" sidebar, and Publish. While this is filled, it replaces the automatic pick from the AtollWire Facebook Page. Clear it and Publish to go back to the automatic pick. Facebook does not let the website read other pages' posts, so fill the boxes below (page name, post text, picture) to make the card look like the X and TikTok cards.",
+      type: "url",
+      validation: (Rule) =>
+        Rule.uri({ allowRelative: false, scheme: ["http", "https"] }),
+    }),
+    defineField({
+      name: "topFacebookPostPageName",
+      title: "Facebook card — page or person name",
+      description: "Shown at the top of the card, e.g. \"Sun Online\". Leave empty to show just \"Facebook\".",
+      type: "string",
+      validation: (Rule) => Rule.max(60),
+    }),
+    defineField({
+      name: "topFacebookPostText",
+      title: "Facebook card — post text",
+      description: "Copy a line or two from the post. Shown as the main text of the card (same text on both homepages).",
+      type: "text",
+      rows: 3,
+      validation: (Rule) => Rule.max(240),
+    }),
+    defineField({
+      name: "topFacebookPostImage",
+      title: "Facebook card — picture",
+      description: "Optional. Save the post's picture and upload it here (a screenshot of the post's photo is fine).",
+      type: "image",
+      options: { hotspot: true },
+    }),
+    defineField({
       name: "topFacebookPostNoteDv",
       title: "Facebook card — short description (Dhivehi)",
       description:
