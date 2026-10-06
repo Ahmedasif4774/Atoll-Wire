@@ -25,6 +25,12 @@ const articleProjection = /* groq */ `{
   // permanent public number (see lib/articleNumbers.ts).
   "id": _id,
   "lang": $lang,
+  // Whether the story also exists in the other language (so the language
+  // switch can link straight to it, or to that site's homepage if not).
+  "hasOtherLang": select(
+    $lang == "dv" => defined(titleEn) && titleEn != "",
+    defined(titleDv) && titleDv != ""
+  ),
   "category": category->slug.current,
   "title": select($lang == "dv" => titleDv, titleEn),
   "dek": select($lang == "dv" => dekDv, dekEn),
@@ -82,7 +88,12 @@ export const allCategoriesQuery = /* groq */ `
 // editor flips its Status field to Approved (see lib/sanity/schemaTypes/
 // article.ts). Do not remove this filter from a query without adding an
 // equivalent check elsewhere, or unapproved drafts become publicly visible.
-const APPROVED = `status == "approved"`;
+//
+// It also checks that the article HAS a title in the language being asked
+// for ($lang): a story written only in English never appears on the Dhivehi
+// site, and a Dhivehi-only story never appears on the English site. Articles
+// with both titles (all existing ones) show on both, exactly as before.
+const APPROVED = `status == "approved" && select($lang == "dv" => defined(titleDv) && titleDv != "", defined(titleEn) && titleEn != "")`;
 
 export const articleBySlugQuery = /* groq */ `
   *[_type == "article" && slug.current == $slug && ${APPROVED}][0] ${articleProjection}

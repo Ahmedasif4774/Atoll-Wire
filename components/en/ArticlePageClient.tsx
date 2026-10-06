@@ -21,7 +21,7 @@ export default function ArticlePageClient({
 }) {
   return (
     <>
-      <Header dvHref={`/article/${article.ref}`} />
+      <Header dvHref={article.hasOtherLang ? `/article/${article.ref}` : "/"} />
       <Nav active={article.category as CategorySlug} />
       <main>
         <div className="article-page-grid">

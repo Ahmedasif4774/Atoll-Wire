@@ -152,6 +152,7 @@ function formatAppeal(lang: Lang, a: RawAppeal | null | undefined): AppealFields
 interface RawArticle {
   slug: string;
   id?: string;
+  hasOtherLang?: boolean;
   category: CategorySlug;
   title: string;
   dek?: string;
@@ -172,6 +173,7 @@ function mapArticle(a: RawArticle, lang: Lang, number?: number): Article {
   return {
     slug: a.slug,
     ref: typeof number === "number" ? String(number) : a.slug,
+    hasOtherLang: a.hasOtherLang !== false,
     lang,
     category: a.category,
     title: a.title,

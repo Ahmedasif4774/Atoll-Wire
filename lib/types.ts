@@ -84,6 +84,8 @@ export interface Article {
   // as text (e.g. "10234") once it has one, otherwise its slug. Always build
   // article links from `ref`, never from `slug`.
   ref: string;
+  // True when the story also exists in the other language.
+  hasOtherLang: boolean;
   lang: Lang;
   category: CategorySlug;
   title: string;

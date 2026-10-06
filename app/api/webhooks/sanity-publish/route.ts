@@ -129,24 +129,32 @@ export async function POST(req: Request) {
     // typo after approval) — never post the same article twice.
     return NextResponse.json({ skipped: "already posted" });
   }
-  if (!payload._id || !payload.slug || !payload.titleDv) {
-    // Most likely cause: the webhook's projection in manage.sanity.io
-    // doesn't select these fields. See README.md's setup section for the
-    // exact projection this endpoint expects.
-    console.error("[sanity-publish webhook] payload missing _id/slug/titleDv — check the webhook's GROQ projection:", payload);
+  if (!payload._id) {
+    console.error("[sanity-publish webhook] payload missing _id — check the webhook's GROQ projection:", payload);
     return NextResponse.json({ error: "incomplete payload — check webhook projection" }, { status: 400 });
   }
 
-  // Recency gate: look up the article's own publish date (the webhook's
-  // payload doesn't carry it) and refuse to post anything older than
-  // MAX_AGE_HOURS. If the date can't be determined, don't post.
+  // Read the article's own details from Sanity (rather than trusting the
+  // webhook's payload, which only carries what its projection selects): its
+  // publish date for the recency gate, and its titles/slug for the post.
+  // Recency gate: refuse to post anything older than MAX_AGE_HOURS. If the
+  // date can't be determined, don't post.
+  let article: {
+    publishedAt?: string;
+    _createdAt?: string;
+    titleDv?: string;
+    titleEn?: string;
+    dekDv?: string;
+    dekEn?: string;
+    slug?: string;
+  } | null = null;
   try {
-    const dates: { publishedAt?: string; _createdAt?: string } | null = await sanityClient.fetch(
-      `*[_id == $id][0]{ publishedAt, _createdAt }`,
+    article = await sanityClient.fetch(
+      `*[_id == $id][0]{ publishedAt, _createdAt, titleDv, titleEn, dekDv, dekEn, "slug": slug.current }`,
       { id: payload._id },
       { cache: "no-store" },
     );
-    const when = dates?.publishedAt ?? dates?._createdAt;
+    const when = article?.publishedAt ?? article?._createdAt;
     const ageMs = when ? Date.now() - new Date(when).getTime() : NaN;
     if (!Number.isFinite(ageMs)) {
       return NextResponse.json({ skipped: "could not determine the article's publish date" });
@@ -157,6 +165,20 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("[sanity-publish webhook] could not check article date — not posting:", err);
     return NextResponse.json({ skipped: "could not check article date" });
+  }
+
+  // Which language is the story in? A Dhivehi story is posted in Dhivehi and
+  // links to the Dhivehi site; an English-only story is posted in English and
+  // links to the English site. (A story with both is posted in Dhivehi, as
+  // before.)
+  const titleDv = (article?.titleDv ?? payload.titleDv ?? "").trim();
+  const titleEn = (article?.titleEn ?? "").trim();
+  const useDhivehi = titleDv.length > 0;
+  const title = useDhivehi ? titleDv : titleEn;
+  const dek = useDhivehi ? (article?.dekDv ?? payload.dekDv) : article?.dekEn;
+  if (!title) {
+    console.error("[sanity-publish webhook] article has no title in either language — not posting:", payload._id);
+    return NextResponse.json({ skipped: "article has no title" });
   }
 
   const pageId = cleanEnv(process.env.FB_PAGE_ID);
@@ -171,8 +193,10 @@ export async function POST(req: Request) {
   // page's Open Graph tags (see generateMetadata in
   // app/(dv)/article/[slug]/page.tsx), so we don't need to attach an image
   // here ourselves.
-  const articleUrl = `${SITE_URL}/article/${articleNumber ?? payload.slug}`;
-  const message = [payload.titleDv, payload.dekDv].filter(Boolean).join("\n\n");
+  const slug = article?.slug ?? payload.slug;
+  const articlePath = useDhivehi ? "/article" : "/en/article";
+  const articleUrl = `${SITE_URL}${articlePath}/${articleNumber ?? slug}`;
+  const message = [title, dek].filter(Boolean).join("\n\n");
 
   // Posting needs the Page's own token; swap the saved (system-user) token
   // for it when possible.

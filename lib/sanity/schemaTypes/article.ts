@@ -114,7 +114,17 @@ export default defineType({
       title: "Slug",
       description: "Shared by both language versions, e.g. \"harbor\" → /article/harbor and /en/article/harbor.",
       type: "slug",
-      options: { source: "titleEn", maxLength: 96 },
+      // Built from the English title when there is one. A Dhivehi-only
+      // article has no English title to build from, so it gets a short
+      // generic slug instead (the public link uses the article's number,
+      // not the slug, so the slug is only a fallback).
+      options: {
+        source: (doc) => {
+          const d = doc as { titleEn?: string };
+          return d.titleEn || `news-${new Date().toISOString().slice(0, 10)}-${Math.random().toString(36).slice(2, 6)}`;
+        },
+        maxLength: 96,
+      },
       group: "meta",
       validation: (Rule) => Rule.required(),
     }),
@@ -207,7 +217,19 @@ export default defineType({
     }),
 
     // ---- Dhivehi ----
-    defineField({ name: "titleDv", title: "Title", type: "string", group: "dv", validation: (Rule) => Rule.required() }),
+    defineField({
+      name: "titleDv",
+      title: "Title",
+      description:
+        "Leave BOTH language titles filled for a story on both sites. Fill only this one and the story appears on the Dhivehi site only.",
+      type: "string",
+      group: "dv",
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const en = (context.document as { titleEn?: string } | undefined)?.titleEn;
+          return value || en ? true : "Add a Dhivehi title, an English title, or both (at least one is needed).";
+        }),
+    }),
     defineField({ name: "dekDv", title: "Dek (standfirst)", type: "text", rows: 2, group: "dv" }),
     defineField({ name: "heroImageAltDv", title: "Hero image alt text", type: "string", group: "dv" }),
     defineField({ name: "captionDv", title: "Photo caption", type: "string", group: "dv" }),
@@ -229,7 +251,19 @@ export default defineType({
     }),
 
     // ---- English ----
-    defineField({ name: "titleEn", title: "Title", type: "string", group: "en", validation: (Rule) => Rule.required() }),
+    defineField({
+      name: "titleEn",
+      title: "Title",
+      description:
+        "Leave BOTH language titles filled for a story on both sites. Fill only this one and the story appears on the English site only.",
+      type: "string",
+      group: "en",
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const dv = (context.document as { titleDv?: string } | undefined)?.titleDv;
+          return value || dv ? true : "Add a Dhivehi title, an English title, or both (at least one is needed).";
+        }),
+    }),
     defineField({ name: "dekEn", title: "Dek (standfirst)", type: "text", rows: 2, group: "en" }),
     defineField({ name: "heroImageAltEn", title: "Hero image alt text", type: "string", group: "en" }),
     defineField({ name: "captionEn", title: "Photo caption", type: "string", group: "en" }),
@@ -312,11 +346,11 @@ export default defineType({
     }),
   ],
   preview: {
-    select: { title: "titleEn", subtitle: "slug.current", media: "heroImage", status: "status" },
-    prepare({ title, subtitle, media, status }) {
+    select: { title: "titleEn", titleDv: "titleDv", subtitle: "slug.current", media: "heroImage", status: "status" },
+    prepare({ title, titleDv, subtitle, media, status }) {
       const statusLabel =
         status === "approved" ? "✅ Approved" : status === "pendingReview" ? "🕓 Pending Review" : "📝 Draft";
-      return { title, subtitle: `${statusLabel} · ${subtitle}`, media };
+      return { title: title || titleDv || "Untitled", subtitle: `${statusLabel} · ${subtitle}`, media };
     },
   },
 });

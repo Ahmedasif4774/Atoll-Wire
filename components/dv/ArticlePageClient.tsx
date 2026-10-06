@@ -22,7 +22,7 @@ export default function ArticlePageClient({
 }) {
   return (
     <>
-      <Header enHref={`/en/article/${article.ref}`} />
+      <Header enHref={article.hasOtherLang ? `/en/article/${article.ref}` : "/en"} />
       <Nav active={article.category as CategorySlug} />
       <main>
         <div className="article-page-grid">
