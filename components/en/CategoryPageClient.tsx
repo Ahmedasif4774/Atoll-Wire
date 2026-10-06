@@ -323,7 +323,10 @@ export default function CategoryPageClient({
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          padding: 16px;
+          /* Little space below the headline (it sits as low as possible so it
+             stays off people's faces); the time stamp lives in the bottom-left
+             corner, like on the homepage. */
+          padding: 0 16px 28px;
           text-align: center;
         }
         :global(.feed-item h3) {
@@ -331,7 +334,7 @@ export default function CategoryPageClient({
           font-size: 17px;
           font-weight: 700;
           line-height: 1.4;
-          margin-bottom: 8px;
+          margin-bottom: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -339,9 +342,13 @@ export default function CategoryPageClient({
           text-align: center;
         }
         :global(.feed-item .meta-line) {
+          position: absolute;
+          left: 12px;
+          bottom: 8px;
           color: rgba(255, 255, 255, 0.85);
           font-size: 11.5px;
-          justify-content: center;
+          justify-content: flex-start;
+          direction: ltr;
         }
         .news-feed :global(.load-more) {
           grid-column: 1 / -1;
