@@ -1,5 +1,6 @@
 "use client";
 
+import BreakingBar from "@/components/shared/BreakingBar";
 import Header from "@/components/dv/Header";
 import Nav from "@/components/dv/Nav";
 import Footer from "@/components/dv/Footer";
@@ -45,6 +46,7 @@ export default function HomePageClient({
       <Header enHref="/en" />
       <Nav />
       <main className="wrap">
+        <BreakingBar locale="dv" />
         <LiveBanner liveNowLabel="މިހާރު ލައިވް" youtubeLabel="ޔޫޓިއުބް ލައިވް" facebookLabel="ފޭސްބުކް ލައިވް" />
 
         <div className="ad-slot">

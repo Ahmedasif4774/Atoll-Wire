@@ -7,7 +7,8 @@ interface Breaking {
   href: string;
 }
 
-// Red "Breaking news" bar shown at the very top of every page while a story
+// Red "Breaking news" bar shown under the menu bar, at the same width as the
+// page content, while a story
 // is ticked "Breaking news" in Studio (and was published in the last 6
 // hours — see app/api/breaking/route.ts). Renders nothing otherwise, and
 // nothing at all if the lookup fails, so it can never break a page.
@@ -46,12 +47,12 @@ export default function BreakingBar({ locale }: { locale: "dv" | "en" }) {
         color: "#fff",
         textDecoration: "none",
         padding: "9px 16px",
+        borderRadius: 6,
+        margin: "20px 0 0",
       }}
     >
       <div
         style={{
-          maxWidth: 1200,
-          margin: "0 auto",
           display: "flex",
           alignItems: "center",
           gap: 12,

@@ -1,5 +1,6 @@
 "use client";
 
+import BreakingBar from "@/components/shared/BreakingBar";
 import Header from "@/components/en/Header";
 import Nav from "@/components/en/Nav";
 import Footer from "@/components/en/Footer";
@@ -34,6 +35,7 @@ export default function CategoryPageClient({
       <Header dvHref={`/${category.slug}`} />
       <Nav active={category.slug as CategorySlug} />
       <main className="wrap">
+        <BreakingBar locale="en" />
         <div className="category-header">
           <div className="category-title-row">
             <h1>{category.labelEn}</h1>

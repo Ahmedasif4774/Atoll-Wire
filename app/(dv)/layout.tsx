@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "../globals.css";
 import VisitorBadge from "@/components/dv/VisitorBadge";
 import PrayerNotification from "@/components/shared/PrayerNotification";
-import BreakingBar from "@/components/shared/BreakingBar";
 import { LOGO_MARK_DATA_URI } from "@/lib/brandLogo";
 
 export const metadata: Metadata = {
@@ -28,7 +27,6 @@ export default function DvRootLayout({ children }: { children: React.ReactNode }
           fontFamily: "'MV Waheed', 'Noto Sans Thaana', sans-serif",
         }}
       >
-        <BreakingBar locale="dv" />
         {children}
         <VisitorBadge />
         <PrayerNotification locale="dv" />

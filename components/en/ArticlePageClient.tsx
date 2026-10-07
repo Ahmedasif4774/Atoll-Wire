@@ -1,5 +1,6 @@
 "use client";
 
+import BreakingBar from "@/components/shared/BreakingBar";
 import Header from "@/components/en/Header";
 import Nav from "@/components/en/Nav";
 import Footer from "@/components/en/Footer";
@@ -23,6 +24,9 @@ export default function ArticlePageClient({
     <>
       <Header dvHref={article.hasOtherLang ? `/article/${article.ref}` : "/"} />
       <Nav active={article.category as CategorySlug} />
+      <div className="wrap">
+        <BreakingBar locale="en" />
+      </div>
       <main>
         <div className="article-page-grid">
           <div className="article-wrap">
