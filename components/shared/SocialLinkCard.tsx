@@ -26,8 +26,9 @@ interface SocialLinkCardProps {
   // (already in the page's language — the Dhivehi page passes the Dhivehi
   // text, the English page the English text). Optional.
   description?: string | null;
-  // Short call-to-action line at the bottom, e.g. "TikTok ↗".
-  cta: string;
+  // Short call-to-action line at the bottom, e.g. "TikTok ↗". Leave out for
+  // no line (the whole card is a link either way).
+  cta?: string;
 }
 
 // A compact "preview" card for today's top X post or TikTok video. Unlike
@@ -141,17 +142,18 @@ export default function SocialLinkCard({
               ))}
             </div>
           )}
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#52696c",
-              direction: "ltr",
-              unicodeBidi: "isolate",
-            }}
-          >
-            {cta}
-          </div>
+          {cta && (
+            <div
+              dir="auto"
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#52696c",
+              }}
+            >
+              {cta}
+            </div>
+          )}
         </div>
       </div>
 

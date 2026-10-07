@@ -212,7 +212,6 @@ export default function HomePageClient({
                     thumbnail={live.image}
                     stats={live.stats}
                     description={live.noteDv}
-                    cta="Facebook ↗"
                   />
                 );
               }
@@ -226,7 +225,6 @@ export default function HomePageClient({
                     iconBg={card.platformBg}
                     text={xPost.text}
                     description={xPost.noteDv}
-                    cta="X ↗"
                   />
                 );
               }
@@ -242,7 +240,6 @@ export default function HomePageClient({
                     video
                     thumbnail={tiktok.thumbnail}
                     description={tiktok.noteDv}
-                    cta="TikTok ↗"
                   />
                 );
               }
