@@ -326,7 +326,7 @@ export default function CategoryPageClient({
           /* Little space below the headline (it sits as low as possible so it
              stays off people's faces); the time stamp lives in the bottom-left
              corner, like on the homepage. */
-          padding: 0 16px 28px;
+          padding: 0 16px 22px;
           text-align: center;
         }
         :global(.feed-item h3) {
@@ -344,7 +344,7 @@ export default function CategoryPageClient({
         :global(.feed-item .meta-line) {
           position: absolute;
           left: 12px;
-          bottom: 8px;
+          bottom: 7px;
           color: rgba(255, 255, 255, 0.85);
           font-size: 11.5px;
           justify-content: flex-start;
