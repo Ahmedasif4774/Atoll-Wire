@@ -185,6 +185,15 @@ export default defineType({
       group: "meta",
     }),
     defineField({
+      name: "breaking",
+      title: "Breaking news (red bar at the top of the site)",
+      description:
+        "Tick and Publish to show this story's headline in a red \"Breaking news\" bar at the very top of every page. The bar hides itself 6 hours after you publish (or republish) the story, or as soon as you untick this and Publish. If several stories are ticked, the newest one shows.",
+      type: "boolean",
+      initialValue: false,
+      group: "meta",
+    }),
+    defineField({
       name: "popular",
       title: "Popular",
       description:

@@ -100,6 +100,17 @@ export const allCategoriesQuery = /* groq */ `
 // with both titles (all existing ones) show on both, exactly as before.
 const APPROVED = `status == "approved" && select($lang == "dv" => defined(titleDv) && titleDv != "", defined(titleEn) && titleEn != "")`;
 
+// Stories ticked "Breaking news" in Studio, newest first. The 6-hour limit is
+// applied in JS (see app/api/breaking/route.ts) rather than in GROQ.
+export const breakingNewsQuery = /* groq */ `
+  *[_type == "article" && breaking == true && ${APPROVED}] | order(_updatedAt desc) {
+    "id": _id,
+    "slug": slug.current,
+    "title": select($lang == "dv" => titleDv, titleEn),
+    "updatedAt": _updatedAt
+  }
+`;
+
 export const articleBySlugQuery = /* groq */ `
   *[_type == "article" && slug.current == $slug && ${APPROVED}][0] ${articleProjection}
 `;
